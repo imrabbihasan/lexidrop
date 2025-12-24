@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "LexiDrop: AI Vocabulary Tutor",
+  "short_name": "LexiDrop",
+  "version": "1.0.0",
+  "description": "Instantly capture words from any webpage. LexiDrop uses AI to generate translations and usage guides, then drops them into your personal gravity-physics whiteboard.",
+  "author": "Your Name",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "Open LexiDrop Whiteboard"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "contextMenus",
+    "notifications",
+    "activeTab" 
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "name": "lexidrop-server",
+  "version": "1.0.0",
+  "description": "LexiDrop Backend Server - Vocabulary tracker with Gemini AI",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push"
+  },
+  "keywords": [
+    "vocabulary",
+    "ai",
+    "gemini"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@prisma/client": "^6.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "nodemon": "^3.1.11",
+    "prisma": "^6.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}

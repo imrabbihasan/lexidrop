@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model WordEntry {
+  id             Int      @id @default(autoincrement())
+  originalText   String
+  translatedText String?
+  explanation    String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+}
