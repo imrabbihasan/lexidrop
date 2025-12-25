@@ -1,19 +1,16 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Matter from 'matter-js';
 
-interface WordEntry {
-    id: number;
-    originalText: string;
-    translatedText: string | null;
-    explanation: string | null;
-    status: string;
-}
+import type { WordEntry } from '../types';
 
 interface PhysicsItem {
     id: number;
     body: Matter.Body;
     text: string;
     color: string;
+    width: number;
+    height: number;
+    fontSize: number;
 }
 
 const STICKY_COLORS = [
@@ -45,67 +42,68 @@ const speakWord = (text: string) => {
     window.speechSynthesis.speak(utterance);
 };
 
-const PhysicsBoard: React.FC = () => {
+interface PhysicsBoardProps {
+    words: WordEntry[];
+}
+
+const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const engineRef = useRef<Matter.Engine>(Matter.Engine.create());
     const runnerRef = useRef<Matter.Runner | null>(null);
     const mouseConstraintRef = useRef<Matter.MouseConstraint | null>(null);
+    // Track items locally for physics bodies
     const [items, setItems] = useState<PhysicsItem[]>([]);
-    const [status, setStatus] = useState<string>('Loading...');
-    // Use a Set ref to track existing IDs - more reliable than array mapping
-    const existingIdsRef = useRef<Set<number>>(new Set());
 
-    // Fetch words and create physics bodies
-    const fetchAndCreateBodies = useCallback(async () => {
-        try {
-            const response = await fetch('http://localhost:3000/api/words');
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const words: WordEntry[] = await response.json();
+    // Persistent Set to track added IDs immediately and prevent duplicates (race conditions/strict mode)
+    const processedIdsRef = useRef<Set<number>>(new Set());
 
-            const engine = engineRef.current;
+    // Sync physics bodies with incoming words prop
+    useEffect(() => {
+        const engine = engineRef.current;
 
-            // Find new words that we haven't added yet
-            const newWords = words.filter(w => !existingIdsRef.current.has(w.id));
+        // Use the persistent ref for checking duplicates
+        // We also check against the valid "words" prop to ensure we only add what's currently passed,
+        // but mostly we care about not adding the SAME id twice ever in this session (unless we implemented removal, which we haven't yet).
 
-            if (newWords.length > 0) {
-                const newItems: PhysicsItem[] = newWords.map((w, i) => {
-                    // Mark this ID as added IMMEDIATELY to prevent race conditions
-                    existingIdsRef.current.add(w.id);
+        const newWords = words.filter(w => !processedIdsRef.current.has(w.id));
 
-                    const x = Math.random() * (window.innerWidth - 200) + 100;
-                    const y = -150 - (i * 120); // Stagger above viewport
+        if (newWords.length > 0) {
+            const newItems: PhysicsItem[] = newWords.map((w, i) => {
+                // Mark immediately as processed
+                processedIdsRef.current.add(w.id);
 
-                    const body = Matter.Bodies.rectangle(x, y, 160, 110, {
-                        restitution: 0.4,
-                        friction: 0.3,
-                        frictionAir: 0.01,
-                        chamfer: { radius: 5 }
-                    });
+                // Responsive Sizing
+                const isNarrow = window.innerWidth < 400;
+                const width = isNarrow ? 120 : 160;
+                const height = isNarrow ? 80 : 110;
+                const fontSize = isNarrow ? 14 : 18;
 
-                    Matter.World.add(engine.world, body);
+                const x = Math.random() * (window.innerWidth - width * 1.5) + width / 2 + 20;
+                const y = -150 - (i * 120);
 
-                    return {
-                        id: w.id,
-                        body,
-                        text: w.originalText,
-                        color: STICKY_COLORS[w.id % STICKY_COLORS.length]
-                    };
+                const body = Matter.Bodies.rectangle(x, y, width, height, {
+                    restitution: 0.4,
+                    friction: 0.3,
+                    frictionAir: 0.01,
+                    chamfer: { radius: 5 }
                 });
 
-                // Use functional update with deduplication as extra safety
-                setItems(prev => {
-                    const prevIds = new Set(prev.map(item => item.id));
-                    const trulyNew = newItems.filter(item => !prevIds.has(item.id));
-                    return [...prev, ...trulyNew];
-                });
-            }
+                Matter.World.add(engine.world, body);
 
-            setStatus(`${words.length} words`);
-        } catch (err) {
-            console.error('Fetch error:', err);
-            setStatus('Connection error');
+                return {
+                    id: w.id,
+                    body,
+                    text: w.originalText,
+                    color: STICKY_COLORS[w.id % STICKY_COLORS.length],
+                    width,
+                    height,
+                    fontSize
+                };
+            });
+
+            setItems(prev => [...prev, ...newItems]);
         }
-    }, []);
+    }, [words]);
 
     useEffect(() => {
         const engine = engineRef.current;
@@ -155,11 +153,44 @@ const PhysicsBoard: React.FC = () => {
         runnerRef.current = runner;
         Matter.Runner.run(runner, engine);
 
-        // Initial fetch
-        fetchAndCreateBodies();
+        // Reset bodies that fall out of bounds
+        Matter.Events.on(engine, 'afterUpdate', () => {
+            const bodies = Matter.Composite.allBodies(engine.world);
+            const height = window.innerHeight;
+            const width = window.innerWidth;
 
-        // Poll for new words every 3 seconds
-        const pollInterval = setInterval(fetchAndCreateBodies, 3000);
+            bodies.forEach(body => {
+                // If body falls way below the ground (out of view)
+                if (body.position.y > height + 200 || body.position.x < -100 || body.position.x > width + 100) {
+                    if (!body.isStatic) { // Don't move the ground
+                        Matter.Body.setPosition(body, {
+                            x: Math.random() * (width - 100) + 50,
+                            y: -100 // Respawn at top
+                        });
+                        // Reset velocity to prevent it from zooming down again instantly
+                        Matter.Body.setVelocity(body, { x: 0, y: 0 });
+                        Matter.Body.setAngularVelocity(body, 0);
+                    }
+                }
+            });
+        });
+
+        // Handle resize to keep walls correct
+        const handleResize = () => {
+            const height = window.innerHeight;
+            const width = window.innerWidth;
+
+            // Move walls
+            Matter.Body.setPosition(ground, { x: width / 2, y: height + 60 / 2 });
+            Matter.Body.setPosition(leftWall, { x: -60 / 2, y: height / 2 });
+            Matter.Body.setPosition(rightWall, { x: width + 60 / 2, y: height / 2 });
+
+            // Recreate vertices for static bodies to resize them
+            Matter.Body.setVertices(ground, Matter.Bodies.rectangle(width / 2, height + 60 / 2, width * 2, 60).vertices);
+            Matter.Body.setVertices(leftWall, Matter.Bodies.rectangle(-60 / 2, height / 2, 60, height * 2).vertices);
+            Matter.Body.setVertices(rightWall, Matter.Bodies.rectangle(width + 60 / 2, height / 2, 60, height * 2).vertices);
+        };
+        window.addEventListener('resize', handleResize);
 
         // Animation loop to sync React with physics
         let animationId: number;
@@ -171,11 +202,11 @@ const PhysicsBoard: React.FC = () => {
 
         return () => {
             cancelAnimationFrame(animationId);
-            clearInterval(pollInterval);
+            window.removeEventListener('resize', handleResize);
             if (runnerRef.current) Matter.Runner.stop(runnerRef.current);
             Matter.Engine.clear(engine);
         };
-    }, [fetchAndCreateBodies]);
+    }, []);
 
     return (
         <div
@@ -190,45 +221,51 @@ const PhysicsBoard: React.FC = () => {
             }}
         >
             {/* Header */}
+            {/* Compact Header */}
             <div style={{
                 position: 'absolute',
                 top: 20,
                 left: 20,
                 zIndex: 100,
-                background: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(10px)',
-                padding: '15px 25px',
-                borderRadius: 16,
-                color: 'white',
-                boxShadow: '0 4px 30px rgba(0,0,0,0.1)'
+                // Make it smaller and transparent to avoid overlapping
+                pointerEvents: 'none'
             }}>
-                <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>📝 LexiDrop</h1>
-                <p style={{ margin: '5px 0 0', opacity: 0.8, fontSize: 14 }}>{status}</p>
+                <h1 style={{
+                    margin: 0,
+                    fontSize: 20, // Smaller font
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.9)',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}>LexiDrop</h1>
+                <p style={{ margin: 0, opacity: 0.8, fontSize: 12, color: 'white' }}>{words.length} words</p>
             </div>
 
             {/* Sticky Notes */}
             {items.map(item => {
                 const { x, y } = item.body.position;
                 const angle = item.body.angle;
+                // Default to standard size if property missing
+                const w = item.width || 160;
+                const h = item.height || 110;
+                const fs = item.fontSize || 18;
 
                 return (
                     <div
                         key={item.id}
                         onDoubleClick={() => speakWord(item.text)}
-                        title="Double-click to hear pronunciation"
                         style={{
                             position: 'absolute',
                             left: 0,
                             top: 0,
-                            transform: `translate(${x - 80}px, ${y - 55}px) rotate(${angle}rad)`,
-                            width: 160,
-                            height: 110,
+                            transform: `translate(${x - w / 2}px, ${y - h / 2}px) rotate(${angle}rad)`,
+                            width: w,
+                            height: h,
                             background: item.color,
                             boxShadow: '4px 4px 15px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)',
                             padding: 12,
                             borderRadius: 4,
                             fontFamily: '"Patrick Hand", "Comic Sans MS", cursive',
-                            fontSize: 18,
+                            fontSize: fs,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -265,4 +302,4 @@ const PhysicsBoard: React.FC = () => {
     );
 };
 
-export default PhysicsBoard;
+export default PhysicsPanel;

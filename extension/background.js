@@ -15,13 +15,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         const word = info.selectionText.trim();
         console.log("Selected word:", word);
 
+        // Open Side Panel
+        chrome.sidePanel.open({ windowId: tab.windowId })
+            .catch((error) => console.error("failed to open side panel", error));
+
         // Show notification
         const notifId = "lexidrop-" + Date.now();
         console.log("Creating notification with ID:", notifId);
 
         chrome.notifications.create(notifId, {
             type: "basic",
-            iconUrl: chrome.runtime.getURL("icons/icon48.png"),
+            iconUrl: "icons/icon48.png",
             title: "LexiDrop",
             message: `Analyzing: "${word}"...`,
             priority: 2
@@ -47,6 +51,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             })
             .then(data => {
                 console.log("Success! Data:", data);
+
+                // Notify Side Panel (if open)
+                chrome.runtime.sendMessage({
+                    action: "WORD_SAVED",
+                    word: word,
+                    data: data
+                }).catch(() => {
+                    // Ignore error if no receivers (side panel closed)
+                });
+
                 // Clear analyzing notification and show success
                 chrome.notifications.clear(notifId);
                 chrome.notifications.create(notifId + "-done", {

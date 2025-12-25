@@ -41,10 +41,30 @@ app.post("/api/save", async (req: Request, res: Response) => {
             return;
         }
 
+        const trimmedText = text.trim();
+
+        // Check for existing entry (case-insensitive)
+        const existingEntry = await prisma.wordEntry.findFirst({
+            where: {
+                originalText: {
+                    equals: trimmedText
+                }
+            }
+        });
+
+        if (existingEntry) {
+            res.status(200).json({
+                message: "Word already exists",
+                id: existingEntry.id,
+                existing: true
+            });
+            return;
+        }
+
         // Create entry with PENDING status
         const entry = await prisma.wordEntry.create({
             data: {
-                originalText: text.trim(),
+                originalText: trimmedText,
                 status: "PENDING",
             },
         });
@@ -56,7 +76,7 @@ app.post("/api/save", async (req: Request, res: Response) => {
         });
 
         // Process AI asynchronously (don't await in response)
-        processWordAsync(entry.id, text.trim(), targetLang);
+        processWordAsync(entry.id, trimmedText, targetLang);
     } catch (error) {
         console.error("Error saving word:", error);
         res.status(500).json({ error: "Failed to save word" });
