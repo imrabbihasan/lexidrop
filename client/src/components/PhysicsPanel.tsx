@@ -44,15 +44,18 @@ const speakWord = (text: string) => {
 
 interface PhysicsBoardProps {
     words: WordEntry[];
+    onDeleteWord?: (id: number) => void;
 }
 
-const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
+const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const engineRef = useRef<Matter.Engine>(Matter.Engine.create());
     const runnerRef = useRef<Matter.Runner | null>(null);
     const mouseConstraintRef = useRef<Matter.MouseConstraint | null>(null);
     // Track items locally for physics bodies
     const [items, setItems] = useState<PhysicsItem[]>([]);
+    // Track if a held item is hovering over the trash
+    const [isHoveringTrash, setIsHoveringTrash] = useState(false);
 
     // Persistent Set to track added IDs immediately and prevent duplicates (race conditions/strict mode)
     const processedIdsRef = useRef<Set<number>>(new Set());
@@ -85,7 +88,8 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
                     restitution: 0.4,
                     friction: 0.3,
                     frictionAir: 0.01,
-                    chamfer: { radius: 5 }
+                    chamfer: { radius: 5 },
+                    label: `word-${w.id}` // Label needed for collision identification
                 });
 
                 Matter.World.add(engine.world, body);
@@ -115,24 +119,38 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
             window.innerHeight + wallThickness / 2,
             window.innerWidth * 2,
             wallThickness,
-            { isStatic: true }
+            { isStatic: true, label: 'wall' }
         );
         const leftWall = Matter.Bodies.rectangle(
             -wallThickness / 2,
             window.innerHeight / 2,
             wallThickness,
             window.innerHeight * 2,
-            { isStatic: true }
+            { isStatic: true, label: 'wall' }
         );
         const rightWall = Matter.Bodies.rectangle(
             window.innerWidth + wallThickness / 2,
             window.innerHeight / 2,
             wallThickness,
             window.innerHeight * 2,
-            { isStatic: true }
+            { isStatic: true, label: 'wall' }
         );
 
-        Matter.World.add(engine.world, [ground, leftWall, rightWall]);
+        // o Hole Sensor (Bottom Right)
+        const holeSize = 90; // Smaller size
+        const blackHole = Matter.Bodies.circle(
+            window.innerWidth - holeSize / 1.2,
+            window.innerHeight - holeSize / 1.2,
+            holeSize / 2,
+            {
+                isStatic: true,
+                isSensor: true, // Key: Collisions detected but no physical bounce
+                label: 'black-hole',
+                render: { visible: false } // We render via React
+            }
+        );
+
+        Matter.World.add(engine.world, [ground, leftWall, rightWall, blackHole]);
 
         // Mouse interaction
         if (containerRef.current) {
@@ -146,34 +164,81 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
             });
             Matter.World.add(engine.world, mouseConstraint);
             mouseConstraintRef.current = mouseConstraint;
+
+            // Track active drag body
+            let draggedBody: Matter.Body | null = null;
+
+            Matter.Events.on(mouseConstraint, 'startdrag', (event: any) => {
+                draggedBody = event.body;
+            });
+
+            // Deletion on Drop (not just collision)
+            Matter.Events.on(mouseConstraint, 'enddrag', (event: any) => {
+                const body = event.body;
+                draggedBody = null;
+                setIsHoveringTrash(false);
+
+                if (!body) return;
+
+                // Check if the dropped body is touching the black hole
+                const collisions = Matter.Query.collides(blackHole, [body]);
+
+                if (collisions.length > 0) {
+                    if (body.label.startsWith('word-')) {
+                        const id = parseInt(body.label.split('-')[1]);
+
+                        // Visual feedback could go here
+
+                        // Remove from World
+                        Matter.World.remove(engine.world, body);
+
+                        // Remove from local state
+                        setItems(prev => prev.filter(item => item.id !== id));
+                        processedIdsRef.current.delete(id);
+
+                        // Call parent delete
+                        if (onDeleteWord) onDeleteWord(id);
+                    }
+                }
+            });
+
+            // Check collision continuously during drag for visual feedback
+            Matter.Events.on(engine, 'afterUpdate', () => {
+                if (draggedBody) {
+                    const collisions = Matter.Query.collides(blackHole, [draggedBody]);
+                    const isOver = collisions.length > 0;
+                    // Only update state if it changed to avoid spamming re-renders
+                    // Note: accessing state in this callback captures initial state closure
+                    // We need a ref or just update it. React handles setSameValue optimization but throttling is good.
+                    setIsHoveringTrash(isOver);
+                }
+
+                // Reset bodies that fall out of bounds
+                const bodies = Matter.Composite.allBodies(engine.world);
+                const height = window.innerHeight;
+                const width = window.innerWidth;
+
+                bodies.forEach(body => {
+                    // If body falls way below the ground (out of view)
+                    if (body.position.y > height + 200 || body.position.x < -100 || body.position.x > width + 100) {
+                        if (!body.isStatic) { // Don't move the ground
+                            Matter.Body.setPosition(body, {
+                                x: Math.random() * (width - 100) + 50,
+                                y: -100 // Respawn at top
+                            });
+                            // Reset velocity to prevent it from zooming down again instantly
+                            Matter.Body.setVelocity(body, { x: 0, y: 0 });
+                            Matter.Body.setAngularVelocity(body, 0);
+                        }
+                    }
+                });
+            });
         }
 
         // Start physics engine
         const runner = Matter.Runner.create();
         runnerRef.current = runner;
         Matter.Runner.run(runner, engine);
-
-        // Reset bodies that fall out of bounds
-        Matter.Events.on(engine, 'afterUpdate', () => {
-            const bodies = Matter.Composite.allBodies(engine.world);
-            const height = window.innerHeight;
-            const width = window.innerWidth;
-
-            bodies.forEach(body => {
-                // If body falls way below the ground (out of view)
-                if (body.position.y > height + 200 || body.position.x < -100 || body.position.x > width + 100) {
-                    if (!body.isStatic) { // Don't move the ground
-                        Matter.Body.setPosition(body, {
-                            x: Math.random() * (width - 100) + 50,
-                            y: -100 // Respawn at top
-                        });
-                        // Reset velocity to prevent it from zooming down again instantly
-                        Matter.Body.setVelocity(body, { x: 0, y: 0 });
-                        Matter.Body.setAngularVelocity(body, 0);
-                    }
-                }
-            });
-        });
 
         // Handle resize to keep walls correct
         const handleResize = () => {
@@ -184,6 +249,12 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
             Matter.Body.setPosition(ground, { x: width / 2, y: height + 60 / 2 });
             Matter.Body.setPosition(leftWall, { x: -60 / 2, y: height / 2 });
             Matter.Body.setPosition(rightWall, { x: width + 60 / 2, y: height / 2 });
+
+            // Move Black Hole to corner
+            Matter.Body.setPosition(blackHole, {
+                x: width - holeSize / 1.2,
+                y: height - holeSize / 1.2
+            });
 
             // Recreate vertices for static bodies to resize them
             Matter.Body.setVertices(ground, Matter.Bodies.rectangle(width / 2, height + 60 / 2, width * 2, 60).vertices);
@@ -206,7 +277,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
             if (runnerRef.current) Matter.Runner.stop(runnerRef.current);
             Matter.Engine.clear(engine);
         };
-    }, []);
+    }, [onDeleteWord]);  // Re-run if handler changes (unlikely)
 
     return (
         <div
@@ -298,6 +369,46 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words }) => {
                     <p>"Save to LexiDrop" to add your first word!</p>
                 </div>
             )}
+
+            {/* Trash Icon Visual */}
+            <div style={{
+                position: 'absolute',
+                // Physics body is at width - 75, height - 75 (holeSize 90 / 1.2 = 75)
+                // We want to center this 60x60 div there.
+                // 75 - (60/2) = 45px from bottom/right
+                bottom: 45,
+                right: 45,
+                width: 60,
+                height: 60,
+                zIndex: 50,
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27)',
+                transform: isHoveringTrash ? 'scale(1.2)' : 'scale(1)',
+            }}>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={isHoveringTrash ? "#ff4757" : "rgba(255,255,255,0.5)"}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                        filter: isHoveringTrash ? 'drop-shadow(0 0 8px rgba(255, 71, 87, 0.6))' : 'none',
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </div>
         </div>
     );
 };

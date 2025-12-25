@@ -45,6 +45,16 @@ const SidePanel: React.FC = () => {
         };
     }, []);
 
+    const deleteWord = async (id: number) => {
+        try {
+            await fetch(`http://localhost:3000/api/words/${id}`, { method: 'DELETE' });
+            // Optimistic update
+            setWords(prev => prev.filter(w => w.id !== id));
+        } catch (error) {
+            console.error('Failed to delete word:', error);
+        }
+    };
+
     const groupedWords = groupWordsByDate(words);
 
     return (
@@ -96,7 +106,7 @@ const SidePanel: React.FC = () => {
 
             {/* Views */}
             {view === 'canvas' ? (
-                <PhysicsPanel words={words} />
+                <PhysicsPanel words={words} onDeleteWord={deleteWord} />
             ) : (
                 <div style={{
                     width: '100%',

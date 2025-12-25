@@ -169,9 +169,31 @@ app.listen(PORT, () => {
     console.log(`   GET  /health - Health check`);
 });
 
-// Graceful shutdown
-process.on("SIGINT", async () => {
+// endpoint to delete a word
+app.delete("/api/words/:id", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            res.status(400).json({ error: "Invalid ID" });
+            return;
+        }
+
+        await prisma.wordEntry.delete({
+            where: { id: id },
+        });
+
+        res.json({ message: "Word deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting word:", error);
+        res.status(500).json({ error: "Failed to delete word" });
+    }
+});
+
+const handleShutdown = async (signal: string) => {
     console.log("\nShutting down...");
     await prisma.$disconnect();
     process.exit(0);
-});
+};
+
+// Graceful shutdown
+process.on("SIGINT", handleShutdown);
