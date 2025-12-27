@@ -1,61 +1,120 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-let genAI: GoogleGenerativeAI | null = null;
+let openai: OpenAI | null = null;
 
 export interface ExplainWordResult {
     translatedText: string;
+    secondaryTranslation: string;
+    pinyin?: string;
     explanation: string;
+    language: string;
 }
 
 /**
- * Uses Google Gemini to translate and explain a word/phrase.
- * @param text - The word or phrase to explain
- * @param targetLang - Target language for translation (default: "English")
- * @returns JSON with translatedText and explanation
+ * Uses Hugging Face Serverless Inference (Qwen 2.5-72B) to explain a word.
+ * Compatible with OpenAI SDK.
  */
-export async function explainWord(
-    text: string,
-    targetLang: string = "English"
-): Promise<ExplainWordResult> {
-    // Lazy initialization to ensure process.env is populated
-    if (!genAI) {
-        const apiKey = process.env.GEMINI_API_KEY;
+export async function explainWord(text: string): Promise<ExplainWordResult> {
+    // Lazy initialization
+    if (!openai) {
+        const apiKey = process.env.HUGGINGFACE_API_KEY;
         if (!apiKey) {
-            throw new Error("GEMINI_API_KEY is not set in environment variables");
+            console.warn("HUGGINGFACE_API_KEY is not set. Using fallback.");
+            return getFallbackResult(text, "Key Missing");
         }
-        genAI = new GoogleGenerativeAI(apiKey);
+        openai = new OpenAI({
+            baseURL: "https://router.huggingface.co/v1",
+            apiKey: apiKey
+        });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const systemPrompt = `You are an expert linguist. Analyze the user's word.
+Return ONLY raw JSON. Do not use markdown blocks like \`\`\`json.
 
-    const prompt = `You are a vocabulary learning assistant. Analyze the following word or phrase and provide:
-1. The translation to ${targetLang}
-2. A clear, concise explanation of its meaning, usage, and any important context
-
-Word/Phrase: "${text}"
-
-Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
+Required JSON Structure:
 {
-  "translatedText": "the translation here",
-  "explanation": "A clear explanation of the word including its meaning, common usage, and any relevant context. Use simple language suitable for language learners."
+  "language": "Detected valid language name",
+  "translatedText": "English translation",
+  "secondaryTerm": "Bangla translation (Mandatory)",
+  "pinyin": "Pinyin (only if Chinese, else null)",
+  "usageMarkdown": "Concise explanation of meaning/usage."
 }`;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        const responseText = response.text().trim();
+        const completion = await openai.chat.completions.create({
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `Word: "${text}"` }
+            ],
+            model: "Qwen/Qwen2.5-72B-Instruct",
+            max_tokens: 500,
+            temperature: 0.3, // Lower temperature for more deterministic JSON
+            // Note: response_format "json_object" is widely supported but sometimes Qwen raw needs prompting
+        });
 
-        // Clean up response - remove any markdown code blocks if present
-        const cleanedResponse = responseText
-            .replace(/```json\n?/g, "")
-            .replace(/```\n?/g, "")
-            .trim();
+        const content = completion.choices[0].message.content;
+        if (!content) throw new Error("Empty response from AI");
 
-        const parsed: ExplainWordResult = JSON.parse(cleanedResponse);
-        return parsed;
+        const result = parseJSONSafe(content);
+
+        // Map Keys
+        return {
+            translatedText: result.translatedText || text,
+            secondaryTranslation: result.secondaryTerm || "...",
+            pinyin: result.pinyin || undefined,
+            explanation: result.usageMarkdown || "No explanation.",
+            language: result.language || "Unknown",
+        };
+
     } catch (error: any) {
-        console.error("Error calling Gemini API:", error);
-        // Propagate the actual error message for better debugging
-        throw new Error(`AI Service Error: ${error.message || error}`);
+        console.error("HF AI Error:", error);
+
+        // Handle fallback details
+        const errMsg = error.message || "";
+        const status = error.status || 0;
+
+        if (status === 503 || errMsg.includes("503")) {
+            return getFallbackResult(text, "Model Warning Up", "Model is loading. Please try again in 15s.");
+        }
+        if (status === 429 || errMsg.includes("429")) {
+            return getFallbackResult(text, "Rate Limit", "Too many requests. Please wait.");
+        }
+
+        return getFallbackResult(text, "AI Error");
     }
+}
+
+/**
+ * Robust JSON extraction from potentially chatty model output
+ */
+function parseJSONSafe(content: string): any {
+    const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        // Attempt to find the first { and last }
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            const substring = cleaned.substring(firstBrace, lastBrace + 1);
+            try {
+                return JSON.parse(substring);
+            } catch (inner) {
+                throw new Error("Failed to parse JSON substring");
+            }
+        }
+        throw new Error("No JSON found in response");
+    }
+}
+
+function getFallbackResult(text: string, errorType: string, customMsg?: string): ExplainWordResult {
+    return {
+        translatedText: `${text} (${errorType})`,
+        secondaryTranslation: "Loading...",
+        explanation: customMsg || "Service unavailable. Please check logs.",
+        language: "Unknown",
+        pinyin: undefined
+    };
 }

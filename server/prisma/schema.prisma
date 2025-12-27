@@ -8,10 +8,13 @@ datasource db {
 }
 
 model WordEntry {
-  id             Int      @id @default(autoincrement())
-  originalText   String
-  translatedText String?
-  explanation    String?
-  status         String   @default("PENDING")
-  createdAt      DateTime @default(now())
+  id                   Int      @id @default(autoincrement())
+  originalText         String
+  translatedText       String?
+  secondaryTranslation String?
+  pinyin               String?
+  explanation          String?
+  language             String?
+  status               String   @default("PENDING")
+  createdAt            DateTime @default(now())
 }

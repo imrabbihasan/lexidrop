@@ -94,12 +94,15 @@ async function processWordAsync(
     try {
         console.log(`Processing word: "${text}" (ID: ${id})`);
 
-        const result = await explainWord(text, targetLang);
+        const result = await explainWord(text);
 
         await prisma.wordEntry.update({
             where: { id },
             data: {
                 translatedText: result.translatedText,
+                secondaryTranslation: result.secondaryTranslation,
+                pinyin: result.pinyin,
+                language: result.language,
                 explanation: result.explanation,
                 status: "COMPLETED",
             },

@@ -8,6 +8,9 @@ interface PhysicsItem {
     body: Matter.Body;
     originalText: string;
     translatedText: string;
+    secondaryTranslation?: string;
+    pinyin?: string;
+    language?: string;
     color: string;
     width: number;
     height: number;
@@ -73,9 +76,6 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
         const engine = engineRef.current;
 
         // Use the persistent ref for checking duplicates
-        // We also check against the valid "words" prop to ensure we only add what's currently passed,
-        // but mostly we care about not adding the SAME id twice ever in this session (unless we implemented removal, which we haven't yet).
-
         const newWords = words.filter(w => !processedIdsRef.current.has(w.id));
 
         if (newWords.length > 0) {
@@ -107,6 +107,9 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                     body,
                     originalText: w.originalText,
                     translatedText: w.translatedText || '...',
+                    secondaryTranslation: w.secondaryTranslation || undefined,
+                    pinyin: w.pinyin || undefined,
+                    language: w.language || undefined,
                     color: STICKY_COLORS[w.id % STICKY_COLORS.length],
                     width,
                     height,
@@ -128,7 +131,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
 
         const ground = Matter.Bodies.rectangle(
             window.innerWidth / 2,
-            window.innerHeight + wallThickness / 2,
+            window.innerHeight - 20 + wallThickness / 2, // -20px padding from bottom
             window.innerWidth * 2,
             wallThickness,
             { isStatic: true, label: 'wall' }
@@ -204,9 +207,8 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                     if (body.label.startsWith('word-')) {
                         const id = parseInt(body.label.split('-')[1]);
 
-                        // Visual feedback could go here
-
-                        // Remove from World
+                        // Move visual removal logic to state update? 
+                        // Actually we remove from physics immediately for responsiveness
                         Matter.World.remove(engine.world, body);
 
                         // Remove from local state
@@ -224,9 +226,6 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                 if (draggedBody) {
                     const collisions = Matter.Query.collides(blackHole, [draggedBody]);
                     const isOver = collisions.length > 0;
-                    // Only update state if it changed to avoid spamming re-renders
-                    // Note: accessing state in this callback captures initial state closure
-                    // We need a ref or just update it. React handles setSameValue optimization but throttling is good.
                     setIsHoveringTrash(isOver);
                 }
 
@@ -265,7 +264,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
             setIsLargeScreen(width > 1024);
 
             // Move walls
-            Matter.Body.setPosition(ground, { x: width / 2, y: height + 60 / 2 });
+            Matter.Body.setPosition(ground, { x: width / 2, y: height - 20 + 60 / 2 });
             Matter.Body.setPosition(leftWall, { x: -60 / 2, y: height / 2 });
             Matter.Body.setPosition(rightWall, {
                 x: width - rPadding + 60 / 2,
@@ -279,7 +278,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
             });
 
             // Recreate vertices for static bodies to resize them
-            Matter.Body.setVertices(ground, Matter.Bodies.rectangle(width / 2, height + 60 / 2, width * 2, 60).vertices);
+            Matter.Body.setVertices(ground, Matter.Bodies.rectangle(width / 2, height - 20 + 60 / 2, width * 2, 60).vertices);
             Matter.Body.setVertices(leftWall, Matter.Bodies.rectangle(-60 / 2, height / 2, 60, height * 2).vertices);
             Matter.Body.setVertices(rightWall, Matter.Bodies.rectangle(width - rPadding + 60 / 2, height / 2, 60, height * 2).vertices);
         };
@@ -318,7 +317,6 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
             {items.map(item => {
                 const { x, y } = item.body.position;
                 const angle = item.body.angle;
-                // Default to standard size if property missing
                 const w = item.width || 160;
                 const h = item.height || 110;
                 const fs = item.fontSize || 18;
@@ -329,7 +327,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                 return (
                     <div
                         key={item.id}
-                        onDoubleClick={() => speakWord(item.originalText)} // Speak the translation usually or original? Let's stick to translation for learning or original for reading. Let's do original.
+                        onDoubleClick={() => speakWord(item.originalText)}
                         onMouseEnter={() => setHoveredId(item.id)}
                         onMouseLeave={() => setHoveredId(null)}
                         style={{
@@ -362,9 +360,12 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                     >
                         {/* Content Render Logic */}
                         {isStudyMode ? (
-                            // Study Mode: Show BOTH
+                            // Study Mode: Show ALL (Original + Pinyin + Translations)
                             <>
                                 <strong style={{ color: '#333' }}>{item.originalText}</strong>
+                                {item.pinyin && (
+                                    <div style={{ fontSize: '0.8em', color: '#666', marginBottom: 2 }}>{item.pinyin}</div>
+                                )}
                                 <div style={{
                                     fontSize: '0.85em',
                                     color: '#555',
@@ -373,14 +374,35 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                                     paddingTop: 2,
                                     width: '100%'
                                 }}>
-                                    {item.translatedText}
+                                    <div>{item.translatedText}</div>
+                                    {item.secondaryTranslation && (
+                                        <div style={{ fontSize: '0.9em', color: '#777', fontStyle: 'italic' }}>
+                                            {item.secondaryTranslation}
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         ) : (
-                            // Canvas Mode: Show Original (Translation on Hover)
-                            <strong style={{ color: '#333' }}>
-                                {isHovered ? item.translatedText : item.originalText}
-                            </strong>
+                            // Canvas Mode: Show Original (Pinyin if Chinese). Hover reveals translations.
+                            isHovered ? (
+                                // HOVER STATE: Show Translations
+                                <>
+                                    <strong style={{ color: '#000' }}>{item.translatedText}</strong>
+                                    {item.secondaryTranslation && (
+                                        <div style={{ fontSize: '0.85em', color: '#444', marginTop: 2, fontStyle: 'italic' }}>
+                                            {item.secondaryTranslation}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                // NORMAL STATE: Show Original + Pinyin
+                                <>
+                                    <strong style={{ color: '#333' }}>{item.originalText}</strong>
+                                    {item.pinyin && (
+                                        <div style={{ fontSize: '0.8em', color: '#666', marginTop: 2 }}>{item.pinyin}</div>
+                                    )}
+                                </>
+                            )
                         )}
                     </div>
                 );

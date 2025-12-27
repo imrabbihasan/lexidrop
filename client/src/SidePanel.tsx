@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PhysicsPanel from './components/PhysicsPanel';
 import type { WordEntry } from './types';
-import { groupWordsByDate } from './utils/grouping';
+
 
 const SidePanel: React.FC = () => {
     const [view, setView] = useState<'canvas' | 'folders'>('canvas');
@@ -63,10 +63,22 @@ const SidePanel: React.FC = () => {
         }
     };
 
-    const groupedWords = groupWordsByDate(words);
+    // Grouping Logic by Language
+    const groupWordsByLanguage = (words: WordEntry[]) => {
+        const groups: { [key: string]: WordEntry[] } = {};
+        words.forEach(word => {
+            const lang = word.language || 'Uncategorized';
+            if (!groups[lang]) groups[lang] = [];
+            groups[lang].push(word);
+        });
+        // Sort keys (languages) alphabetically
+        return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
+    };
+
+    const groupedWords = groupWordsByLanguage(words);
 
     return (
-        <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ width: '100vw', height: '100vh', maxHeight: '-webkit-fill-available', overflow: 'hidden', position: 'relative' }}>
 
             {/* Unified Header Overlay */}
             <div style={{
@@ -177,7 +189,7 @@ const SidePanel: React.FC = () => {
                     width: '100%',
                     height: '100%',
                     background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-                    padding: isMobile ? '120px 10px 20px' : '100px 20px 20px', // More padding for header
+                    padding: isMobile ? '120px 10px 180px' : '100px 20px 150px', // Massive bottom padding
                     overflowY: 'auto',
                     color: '#fff',
                     fontFamily: 'Inter, system-ui, sans-serif'
@@ -186,8 +198,8 @@ const SidePanel: React.FC = () => {
                         <h1 style={{ marginBottom: 30, fontSize: isMobile ? 24 : 32 }}>🗂️ Vocabulary Collection</h1>
                         {loading && <p>Loading...</p>}
 
-                        {groupedWords.map(([date, group]) => (
-                            <div key={date} style={{ marginBottom: 30 }}>
+                        {groupedWords.map(([language, group]) => (
+                            <div key={language} style={{ marginBottom: 30 }}>
                                 <h2 style={{
                                     fontSize: 18,
                                     opacity: 0.6,
@@ -196,7 +208,7 @@ const SidePanel: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: 1
                                 }}>
-                                    {new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    {language === 'Uncategorized' ? '📂 Uncategorized' : `🏳️ ${language}`}
                                 </h2>
                                 <div style={{
                                     display: 'grid',
@@ -216,13 +228,26 @@ const SidePanel: React.FC = () => {
                                             onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                                             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                         >
-                                            <div style={{ fontSize: 18, fontWeight: 'bold', color: '#e94560' }}>{word.originalText}</div>
+                                            <div style={{ fontSize: 18, fontWeight: 'bold', color: '#e94560' }}>
+                                                {word.originalText}
+                                                {word.language === 'Chinese' && word.pinyin && (
+                                                    <span style={{ fontSize: 12, fontWeight: 'normal', color: '#ccc', display: 'block' }}>{word.pinyin}</span>
+                                                )}
+                                            </div>
                                             <div style={{ fontSize: 14, marginTop: 5, opacity: 0.8 }}>{word.translatedText}</div>
+                                            {word.secondaryTranslation && (
+                                                <div style={{ fontSize: 12, marginTop: 2, opacity: 0.6, fontStyle: 'italic' }}>
+                                                    {word.secondaryTranslation}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ))}
+
+                        {/* Spacer for bottom scrolling */}
+                        <div style={{ height: 120, width: '100%' }} />
                     </div>
                 </div>
             )}
