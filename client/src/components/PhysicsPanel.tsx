@@ -6,7 +6,8 @@ import type { WordEntry } from '../types';
 interface PhysicsItem {
     id: number;
     body: Matter.Body;
-    text: string;
+    originalText: string;
+    translatedText: string;
     color: string;
     width: number;
     height: number;
@@ -45,9 +46,10 @@ const speakWord = (text: string) => {
 interface PhysicsBoardProps {
     words: WordEntry[];
     onDeleteWord?: (id: number) => void;
+    isStudyMode: boolean;
 }
 
-const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
+const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStudyMode }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const engineRef = useRef<Matter.Engine>(Matter.Engine.create());
     const runnerRef = useRef<Matter.Runner | null>(null);
@@ -56,6 +58,12 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
     const [items, setItems] = useState<PhysicsItem[]>([]);
     // Track if a held item is hovering over the trash
     const [isHoveringTrash, setIsHoveringTrash] = useState(false);
+    // Track hovered item for temporary translation reveal
+    const [hoveredId, setHoveredId] = useState<number | null>(null);
+    // Track large screen for layout adjustments
+    const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
+
+
 
     // Persistent Set to track added IDs immediately and prevent duplicates (race conditions/strict mode)
     const processedIdsRef = useRef<Set<number>>(new Set());
@@ -97,7 +105,8 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
                 return {
                     id: w.id,
                     body,
-                    text: w.originalText,
+                    originalText: w.originalText,
+                    translatedText: w.translatedText || '...',
                     color: STICKY_COLORS[w.id % STICKY_COLORS.length],
                     width,
                     height,
@@ -114,6 +123,9 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
 
         // Setup boundaries
         const wallThickness = 60;
+        // Add padding on right side for large screens
+        const rightPadding = window.innerWidth > 1024 ? 40 : 0;
+
         const ground = Matter.Bodies.rectangle(
             window.innerWidth / 2,
             window.innerHeight + wallThickness / 2,
@@ -129,7 +141,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
             { isStatic: true, label: 'wall' }
         );
         const rightWall = Matter.Bodies.rectangle(
-            window.innerWidth + wallThickness / 2,
+            window.innerWidth - rightPadding + wallThickness / 2,
             window.innerHeight / 2,
             wallThickness,
             window.innerHeight * 2,
@@ -138,9 +150,14 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
 
         // o Hole Sensor (Bottom Right)
         const holeSize = 90; // Smaller size
+        // Position it closer to corner. offset = 45px (center) 
+        // Visual is at bottom: 15px, height: 60px -> Center is 15+30=45px.
+        // Also respect right padding
+        const sensorOffset = 45 + rightPadding;
+
         const blackHole = Matter.Bodies.circle(
-            window.innerWidth - holeSize / 1.2,
-            window.innerHeight - holeSize / 1.2,
+            window.innerWidth - sensorOffset,
+            window.innerHeight - 45, // Keep bottom offset constant
             holeSize / 2,
             {
                 isStatic: true,
@@ -244,22 +261,27 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
         const handleResize = () => {
             const height = window.innerHeight;
             const width = window.innerWidth;
+            const rPadding = width > 1024 ? 40 : 0;
+            setIsLargeScreen(width > 1024);
 
             // Move walls
             Matter.Body.setPosition(ground, { x: width / 2, y: height + 60 / 2 });
             Matter.Body.setPosition(leftWall, { x: -60 / 2, y: height / 2 });
-            Matter.Body.setPosition(rightWall, { x: width + 60 / 2, y: height / 2 });
+            Matter.Body.setPosition(rightWall, {
+                x: width - rPadding + 60 / 2,
+                y: height / 2
+            });
 
             // Move Black Hole to corner
             Matter.Body.setPosition(blackHole, {
-                x: width - holeSize / 1.2,
-                y: height - holeSize / 1.2
+                x: width - (45 + rPadding),
+                y: height - 45
             });
 
             // Recreate vertices for static bodies to resize them
             Matter.Body.setVertices(ground, Matter.Bodies.rectangle(width / 2, height + 60 / 2, width * 2, 60).vertices);
             Matter.Body.setVertices(leftWall, Matter.Bodies.rectangle(-60 / 2, height / 2, 60, height * 2).vertices);
-            Matter.Body.setVertices(rightWall, Matter.Bodies.rectangle(width + 60 / 2, height / 2, 60, height * 2).vertices);
+            Matter.Body.setVertices(rightWall, Matter.Bodies.rectangle(width - rPadding + 60 / 2, height / 2, 60, height * 2).vertices);
         };
         window.addEventListener('resize', handleResize);
 
@@ -291,25 +313,6 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
                 fontFamily: 'Inter, system-ui, sans-serif'
             }}
         >
-            {/* Header */}
-            {/* Compact Header */}
-            <div style={{
-                position: 'absolute',
-                top: 20,
-                left: 20,
-                zIndex: 100,
-                // Make it smaller and transparent to avoid overlapping
-                pointerEvents: 'none'
-            }}>
-                <h1 style={{
-                    margin: 0,
-                    fontSize: 20, // Smaller font
-                    fontWeight: 700,
-                    color: 'rgba(255,255,255,0.9)',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}>LexiDrop</h1>
-                <p style={{ margin: 0, opacity: 0.8, fontSize: 12, color: 'white' }}>{words.length} words</p>
-            </div>
 
             {/* Sticky Notes */}
             {items.map(item => {
@@ -320,10 +323,15 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
                 const h = item.height || 110;
                 const fs = item.fontSize || 18;
 
+                // Interaction Logic
+                const isHovered = hoveredId === item.id;
+
                 return (
                     <div
                         key={item.id}
-                        onDoubleClick={() => speakWord(item.text)}
+                        onDoubleClick={() => speakWord(item.originalText)} // Speak the translation usually or original? Let's stick to translation for learning or original for reading. Let's do original.
+                        onMouseEnter={() => setHoveredId(item.id)}
+                        onMouseLeave={() => setHoveredId(null)}
                         style={{
                             position: 'absolute',
                             left: 0,
@@ -338,6 +346,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
                             fontFamily: '"Patrick Hand", "Comic Sans MS", cursive',
                             fontSize: fs,
                             display: 'flex',
+                            flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
                             textAlign: 'center',
@@ -347,9 +356,32 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
                             lineHeight: 1.2,
                             // Tape effect at top
                             backgroundImage: `linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, transparent 15%)`,
+                            zIndex: isHovered ? 10 : 1, // Pop to front on hover
+                            transition: 'transform 0.1s, z-index 0s' // Smooth transform only
                         }}
                     >
-                        <strong style={{ color: '#333' }}>{item.text}</strong>
+                        {/* Content Render Logic */}
+                        {isStudyMode ? (
+                            // Study Mode: Show BOTH
+                            <>
+                                <strong style={{ color: '#333' }}>{item.originalText}</strong>
+                                <div style={{
+                                    fontSize: '0.85em',
+                                    color: '#555',
+                                    marginTop: 4,
+                                    borderTop: '1px solid rgba(0,0,0,0.1)',
+                                    paddingTop: 2,
+                                    width: '100%'
+                                }}>
+                                    {item.translatedText}
+                                </div>
+                            </>
+                        ) : (
+                            // Canvas Mode: Show Original (Translation on Hover)
+                            <strong style={{ color: '#333' }}>
+                                {isHovered ? item.translatedText : item.originalText}
+                            </strong>
+                        )}
                     </div>
                 );
             })}
@@ -373,19 +405,20 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord }) => {
             {/* Trash Icon Visual */}
             <div style={{
                 position: 'absolute',
-                // Physics body is at width - 75, height - 75 (holeSize 90 / 1.2 = 75)
-                // We want to center this 60x60 div there.
-                // 75 - (60/2) = 45px from bottom/right
-                bottom: 45,
-                right: 45,
+                // Physics body center is at ~45px from bottom/right (OFFSET)
+                // Visual div is 60x60, so center is at bottom + 30.
+                // To align centers: bottom = 45 - 30 = 15px.
+                // On large screens, offset adds 40px padding.
+                bottom: 15,
+                right: isLargeScreen ? 55 : 15, // 15 + 40 = 55
                 width: 60,
                 height: 60,
                 zIndex: 50,
-                pointerEvents: 'none',
+                pointerEvents: 'none', // Critical: Allows mouse events to reach the physics body/sensor below
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27)',
+                transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27), right 0.3s ease', // Animate right change too
                 transform: isHoveringTrash ? 'scale(1.2)' : 'scale(1)',
             }}>
                 <svg
