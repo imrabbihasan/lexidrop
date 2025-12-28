@@ -39,7 +39,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
         // Make API call
         console.log("Sending to server...");
-        fetch("http://localhost:3000/api/save", {
+        fetch("http://localhost:3001/api/save", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: word, targetLang: "bn" })

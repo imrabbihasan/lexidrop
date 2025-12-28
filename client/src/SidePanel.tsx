@@ -14,7 +14,7 @@ const SidePanel: React.FC = () => {
 
     const fetchWords = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/words');
+            const response = await fetch('http://localhost:3001/api/words');
             if (!response.ok) throw new Error('Failed to fetch');
             const data: WordEntry[] = await response.json();
             setWords(data);
@@ -55,7 +55,7 @@ const SidePanel: React.FC = () => {
 
     const deleteWord = async (id: number) => {
         try {
-            await fetch(`http://localhost:3000/api/words/${id}`, { method: 'DELETE' });
+            await fetch(`http://localhost:3001/api/words/${id}`, { method: 'DELETE' });
             // Optimistic update
             setWords(prev => prev.filter(w => w.id !== id));
         } catch (error) {

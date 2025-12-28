@@ -6,35 +6,45 @@ import OpenAI from "openai";
 dotenv.config();
 
 async function testAI() {
-    console.log("🔍 Starting AI Diagnosis (Round 3)...");
+    console.log("🔍 Starting AI Diagnosis (Round 4 - Full Prompt)...");
 
-    const apiKey = process.env.HUGGINGFACE_API_KEY;
-    // Check for "sk-" which usually means OpenAI/DeepSeek key, not HF
-    if (apiKey && apiKey.startsWith("sk-")) {
-        console.warn("⚠️  WARNING: Your key starts with 'sk-', but Hugging Face keys usually start with 'hf_'. You may have pasted the wrong key.");
-    }
-
-    // Correct Router URL
-    const baseURL = "https://router.huggingface.co/hf-inference/v1";
-    // Wait, the search result 1 said https://router.huggingface.co/v1
-    // But let's try that.
-
-    // Actually, let's try the one searching result 1 said specifically.
-    const url = "https://router.huggingface.co/v1";
-
-    console.log(`Testing URL: ${url}`);
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) { console.error("Missing Key"); return; }
 
     const openai = new OpenAI({
-        baseURL: url,
-        apiKey: apiKey
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: apiKey,
+        defaultHeaders: {
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "LexiDrop Diagnosis"
+        }
     });
 
+    const systemPrompt = `You are an expert linguist. Analyze the user's word.
+Return ONLY raw JSON.
+
+Required JSON Structure:
+{
+  "language": "Detected valid language name",
+  "translatedText": "English translation",
+  "secondaryTerm": "Bangla translation (Mandatory)",
+  "pinyin": "Pinyin (only if Chinese, else null)",
+  "usageMarkdown": "Concise explanation of meaning/usage."
+}`;
+
+    // Test Word: "Serendipity"
+    const text = "Serendipity";
+
     try {
-        console.log("📡 Sending test request...");
+        console.log("📡 Sending FULL COMPLEX request to OpenRouter (Gemini Flash 2.0)...");
         const response = await openai.chat.completions.create({
-            messages: [{ role: "user", content: "Return JSON: {\"status\": \"ok\"}" }],
-            model: "Qwen/Qwen2.5-72B-Instruct",
-            max_tokens: 50,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `Word: "${text}"` }
+            ],
+            model: "google/gemini-2.0-flash-exp:free",
+            response_format: { type: "json_object" }, // Keep this to test it
+            temperature: 0.3,
         });
 
         console.log("✅ API Connection Successful!");
@@ -43,6 +53,7 @@ async function testAI() {
         console.error("❌ API Call Failed!");
         console.error("Error Message:", error.message);
         if (error.status) console.error("Status Code:", error.status);
+        if (error.response) console.error("Details:", JSON.stringify(error.response.data || {}, null, 2));
     }
 }
 

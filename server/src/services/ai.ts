@@ -11,25 +11,28 @@ export interface ExplainWordResult {
 }
 
 /**
- * Uses Hugging Face Serverless Inference (Qwen 2.5-72B) to explain a word.
- * Compatible with OpenAI SDK.
+ * Uses OpenRouter (DeepSeek) to explain a word.
  */
 export async function explainWord(text: string): Promise<ExplainWordResult> {
     // Lazy initialization
     if (!openai) {
-        const apiKey = process.env.HUGGINGFACE_API_KEY;
+        const apiKey = process.env.OPENROUTER_API_KEY;
         if (!apiKey) {
-            console.warn("HUGGINGFACE_API_KEY is not set. Using fallback.");
+            console.warn("OPENROUTER_API_KEY is not set. Using fallback.");
             return getFallbackResult(text, "Key Missing");
         }
         openai = new OpenAI({
-            baseURL: "https://router.huggingface.co/v1",
-            apiKey: apiKey
+            baseURL: "https://openrouter.ai/api/v1",
+            apiKey: apiKey,
+            defaultHeaders: {
+                "HTTP-Referer": "http://localhost:3000", // Required by OpenRouter for rankings
+                "X-Title": "LexiDrop"
+            }
         });
     }
 
     const systemPrompt = `You are an expert linguist. Analyze the user's word.
-Return ONLY raw JSON. Do not use markdown blocks like \`\`\`json.
+Return ONLY raw JSON.
 
 Required JSON Structure:
 {
@@ -46,10 +49,9 @@ Required JSON Structure:
                 { role: "system", content: systemPrompt },
                 { role: "user", content: `Word: "${text}"` }
             ],
-            model: "Qwen/Qwen2.5-72B-Instruct",
-            max_tokens: 500,
-            temperature: 0.3, // Lower temperature for more deterministic JSON
-            // Note: response_format "json_object" is widely supported but sometimes Qwen raw needs prompting
+            model: "google/gemini-2.0-flash-exp:free", // OpenRouter model ID
+            response_format: { type: "json_object" },
+            temperature: 0.3,
         });
 
         const content = completion.choices[0].message.content;
@@ -67,17 +69,20 @@ Required JSON Structure:
         };
 
     } catch (error: any) {
-        console.error("HF AI Error:", error);
+        console.error("OpenRouter AI Error:", error);
 
         // Handle fallback details
         const errMsg = error.message || "";
         const status = error.status || 0;
 
-        if (status === 503 || errMsg.includes("503")) {
-            return getFallbackResult(text, "Model Warning Up", "Model is loading. Please try again in 15s.");
+        if (status === 502 || status === 503) {
+            return getFallbackResult(text, "Service Busy", "OpenRouter/DeepSeek is currently busy. Try again.");
         }
-        if (status === 429 || errMsg.includes("429")) {
+        if (status === 429) {
             return getFallbackResult(text, "Rate Limit", "Too many requests. Please wait.");
+        }
+        if (status === 402) {
+            return getFallbackResult(text, "No Credits", "OpenRouter credits exhausted.");
         }
 
         return getFallbackResult(text, "AI Error");
@@ -85,7 +90,7 @@ Required JSON Structure:
 }
 
 /**
- * Robust JSON extraction from potentially chatty model output
+ * Robust JSON extraction
  */
 function parseJSONSafe(content: string): any {
     const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
