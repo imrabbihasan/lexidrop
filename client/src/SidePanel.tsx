@@ -87,7 +87,7 @@ const SidePanel: React.FC = () => {
                 left: 0,
                 width: '100%',
                 zIndex: 200,
-                padding: isMobile ? '10px' : '20px',
+                padding: isMobile ? '15px' : '30px 40px', // Increased padding for "proper" margin
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -115,9 +115,10 @@ const SidePanel: React.FC = () => {
                 {/* Controls Section */}
                 <div style={{
                     display: 'flex',
-                    gap: 8,
+                    gap: 12, // Increased gap for better touch targets/visuals
                     background: 'rgba(255,255,255,0.2)',
                     backdropFilter: 'blur(10px)',
+                    margin: '0 50px',
                     padding: 5,
                     borderRadius: 20,
                     pointerEvents: 'auto'

@@ -11,7 +11,8 @@ export interface ExplainWordResult {
 }
 
 /**
- * Uses OpenRouter (DeepSeek) to explain a word.
+ * Uses OpenRouter with Automatic Fallback.
+ * Strategy: Gemini 2.0 Flash (Free) -> DeepSeek R1 (Free)
  */
 export async function explainWord(text: string): Promise<ExplainWordResult> {
     // Lazy initialization
@@ -25,7 +26,7 @@ export async function explainWord(text: string): Promise<ExplainWordResult> {
             baseURL: "https://openrouter.ai/api/v1",
             apiKey: apiKey,
             defaultHeaders: {
-                "HTTP-Referer": "http://localhost:3000", // Required by OpenRouter for rankings
+                "HTTP-Referer": "http://localhost:3000",
                 "X-Title": "LexiDrop"
             }
         });
@@ -43,15 +44,35 @@ Required JSON Structure:
   "usageMarkdown": "Concise explanation of meaning/usage."
 }`;
 
+    // Define model routing strategy
+    // Primary: Gemini 2.0 Flash (Free)
+    // Fallback: DeepSeek R1 (Free)
+    // OpenRouter uses 'models' in extra_body for fallback chain
+    const fallbackModels = [
+        "google/gemini-2.0-flash-exp:free",
+        "deepseek/deepseek-r1:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "microsoft/phi-3-mini-128k-instruct:free"
+    ];
+
     try {
         const completion = await openai.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: `Word: "${text}"` }
             ],
-            model: "google/gemini-2.0-flash-exp:free", // OpenRouter model ID
-            response_format: { type: "json_object" },
+            // Primary model identifier (usually required by SDK type, though OpenRouter routes based on extra_body if provided)
+            model: "google/gemini-2.0-flash-exp:free",
+            // Fallback configuration
+            // @ts-ignore: OpenRouter specific parameter not in OpenAI types
+            extra_body: {
+                models: fallbackModels
+            },
             temperature: 0.3,
+            // DeepSeek R1 might not support strict "json_object" mode, so we rely on prompt + cleaning
+            // But Gemini does. We'll leave it out for maximum compatibility with R1 fallback, 
+            // or keep it if we trust Gemini to succeed most times. 
+            // Given R1 is fallback, we should probably output raw text and parse it safe.
         });
 
         const content = completion.choices[0].message.content;
@@ -69,20 +90,13 @@ Required JSON Structure:
         };
 
     } catch (error: any) {
-        console.error("OpenRouter AI Error:", error);
+        console.error("OpenRouter (Fallback) AI Error:", error);
 
-        // Handle fallback details
         const errMsg = error.message || "";
         const status = error.status || 0;
 
-        if (status === 502 || status === 503) {
-            return getFallbackResult(text, "Service Busy", "OpenRouter/DeepSeek is currently busy. Try again.");
-        }
-        if (status === 429) {
-            return getFallbackResult(text, "Rate Limit", "Too many requests. Please wait.");
-        }
-        if (status === 402) {
-            return getFallbackResult(text, "No Credits", "OpenRouter credits exhausted.");
+        if (status === 502 || status === 503 || status === 429) {
+            return getFallbackResult(text, "Service Busy", "All AI models are currently busy. Please try again later.");
         }
 
         return getFallbackResult(text, "AI Error");
@@ -90,15 +104,19 @@ Required JSON Structure:
 }
 
 /**
- * Robust JSON extraction
+ * Robust JSON extraction handling Markdown and <think> tags (DeepSeek R1)
  */
 function parseJSONSafe(content: string): any {
-    const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
+    // 1. Remove <think>...</think> blocks (DeepSeek R1 reasoning)
+    let cleaned = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+
+    // 2. Remove Markdown code blocks
+    cleaned = cleaned.replace(/```json/g, "").replace(/```/g, "").trim();
 
     try {
         return JSON.parse(cleaned);
     } catch (e) {
-        // Attempt to find the first { and last }
+        // 3. Attempt to find the first { and last }
         const firstBrace = cleaned.indexOf("{");
         const lastBrace = cleaned.lastIndexOf("}");
 
