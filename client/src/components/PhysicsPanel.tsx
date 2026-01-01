@@ -26,22 +26,55 @@ const STICKY_COLORS = [
     '#ffd1b3', // Orange
 ];
 
+// Cache voices globally to avoid re-fetching delay on every click
+let cachedVoices: SpeechSynthesisVoice[] = [];
+const loadVoices = () => {
+    cachedVoices = window.speechSynthesis.getVoices();
+};
+
+// Initial load attempt
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    loadVoices();
+    // Chrome loads asynchronously, so listener is key
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+}
+
 // Text-to-Speech "Tutor" feature
 const speakWord = (text: string) => {
-    // Cancel any ongoing speech
+    // Cancel any ongoing speech for instant switch
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
 
-    // Auto-detect Chinese characters and set language
-    const hasChinese = /[\u4e00-\u9fff]/.test(text);
-    if (hasChinese) {
-        utterance.lang = 'zh-CN'; // Simplified Chinese
-    } else {
-        utterance.lang = 'en-US'; // Default to English
+    // Ensure we have voices (retry if empty)
+    if (cachedVoices.length === 0) {
+        cachedVoices = window.speechSynthesis.getVoices();
     }
 
-    utterance.rate = 0.9; // Slightly slower for learning
+    // Auto-detect Chinese characters
+    const hasChinese = /[\u4e00-\u9fff]/.test(text);
+
+    if (hasChinese) {
+        utterance.lang = 'zh-CN';
+        // Smart Voice Selection: Prioritize high-quality voices
+        // 1. Google Chinese (Net) - Best quality
+        // 2. Microsoft (Local/Net) - Good
+        // 3. Ting-Ting (Mac Local) - Fast & OK
+        const preferredVoice = cachedVoices.find(v => (v.lang === 'zh-CN' || v.lang === 'zh') && v.name.includes('Google'))
+            || cachedVoices.find(v => (v.lang === 'zh-CN' || v.lang === 'zh') && v.name.includes('Microsoft'))
+            || cachedVoices.find(v => v.name.includes('Ting-Ting'))
+            || cachedVoices.find(v => v.lang === 'zh-CN');
+
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+    } else {
+        utterance.lang = 'en-US';
+    }
+
+    utterance.rate = 0.9; // Standard clear speed (0.85 was a bit draggy, 0.9 is better balance)
     utterance.pitch = 1;
     window.speechSynthesis.speak(utterance);
 };
@@ -205,6 +238,16 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
 
                 if (collisions.length > 0) {
                     if (body.label.startsWith('word-')) {
+                        // Double-Check: Ensure the body is actually near the bottom-right corner (Trash Zone)
+                        // This prevents accidental deletions if collision logic misfires (e.g. on double-click/spawn)
+                        const trashThresholdX = window.innerWidth - 200;
+                        const trashThresholdY = window.innerHeight - 200;
+
+                        if (body.position.x < trashThresholdX || body.position.y < trashThresholdY) {
+                            // False positive collision or not close enough - ignore
+                            return;
+                        }
+
                         const id = parseInt(body.label.split('-')[1]);
 
                         // Move visual removal logic to state update? 
