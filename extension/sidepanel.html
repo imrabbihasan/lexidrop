@@ -16,16 +16,21 @@
 
     #status-container {
       display: none;
-      padding: 15px;
-      background: #fff;
-      border-bottom: 1px solid #ddd;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 100;
-      position: relative;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      z-index: 9999;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .status-loading {
-      color: #666;
+      color: white;
     }
 
     .status-success {
@@ -69,8 +74,8 @@
   <!-- Extension Status Overlay -->
   <div id="status-container"></div>
 
-  <!-- Main App (Vite Dev Server) -->
-  <iframe src="http://localhost:5173"></iframe>
+  <!-- Main App (Production Build) -->
+  <iframe src="dist/index.html"></iframe>
 
   <script src="sidepanel.js"></script>
 </body>

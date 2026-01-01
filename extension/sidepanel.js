@@ -1,63 +1,31 @@
-// LexiDrop Serverless Side Panel Script
-
+// LexiDrop Side Panel Script (Bridge Mode)
 console.log("[LexiDrop] Side panel script loaded.");
 
-// DOM Elements
 const statusContainer = document.getElementById("status-container");
-const contentContainer = document.getElementById("content-container");
+const iframe = document.querySelector('iframe');
 
-// Helper to show/hide status
-function showStatus(html, type = "info") {
-    if (!statusContainer) return;
-    statusContainer.innerHTML = html;
-    statusContainer.className = `status-${type}`; // CSS class for styling
-    statusContainer.style.display = "block";
-}
-
-function hideStatus() {
-    if (statusContainer) statusContainer.style.display = "none";
-}
-
-// 1. Listen for messages from background.js
+// 1. Listen for background messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("[LexiDrop] Received message:", message);
 
-    switch (message.action) {
-        case "lexidrop_loading":
-            showStatus(`
-                <div class="loader"></div>
-                <p>Analyzing <strong>"${message.term}"</strong>...</p>
-            `, "loading");
-            break;
+    if (message.action === "ADD_WORD_REQUEST" && message.term) {
+        // Show brief toast
+        if (statusContainer) {
+            statusContainer.innerText = `Adding "${message.term}"...`;
+            statusContainer.style.display = 'block';
+            statusContainer.className = 'status-loading';
 
-        case "lexidrop_success":
-            // Render the result directly in the side panel
-            showStatus(`
-                <div class="result-card">
-                    <h3>${message.term}</h3>
-                    <p class="secondary">${message.secondaryTerm || ""}</p>
-                    <hr/>
-                    <div class="usage">${message.usageMarkdown || ""}</div>
-                </div>
-            `, "success");
-
-            // Optional: If we still want to use the iframe app, we could postMessage to it here
-            // const iframe = document.querySelector('iframe');
-            // if (iframe) iframe.contentWindow.postMessage({ type: 'LEXIDROP_DATA', payload: message }, '*');
-            break;
-
-        case "lexidrop_error":
-            showStatus(`
-                <div class="error-icon">⚠️</div>
-                <p>${message.error}</p>
-                ${message.error.includes("API Key") ? '<button id="open-options">Open Settings</button>' : ''}
-            `, "error");
-
-            // Attach listener for the button if present
             setTimeout(() => {
-                const btn = document.getElementById("open-options");
-                if (btn) btn.onclick = () => chrome.runtime.openOptionsPage();
-            }, 0);
-            break;
+                statusContainer.style.display = 'none';
+            }, 2000);
+        }
+
+        // Forward to Iframe (React App)
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'LEXIDROP_ADD_WORD',
+                payload: message.term
+            }, '*'); // In production, replace '*' with specific origin if possible
+        }
     }
 });

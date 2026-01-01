@@ -24,30 +24,51 @@ const SidePanel: React.FC = () => {
         }
     };
 
+    const saveWord = async (text: string) => {
+        try {
+            // Show optimistic UI or toast?
+            console.log("Saving word from extension:", text);
+            const response = await fetch('http://localhost:3001/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, targetLang: 'bn' })
+            });
+            if (!response.ok) throw new Error('Failed to save');
+
+            // Refresh words immediately
+            fetchWords();
+        } catch (error) {
+            console.error("Failed to save word:", error);
+        }
+    };
+
     useEffect(() => {
         fetchWords();
-        const interval = setInterval(fetchWords, 3000);
+        const interval = setInterval(fetchWords, 5000); // Slower polling
 
         const handleResize = () => setIsMobile(window.innerWidth < 600);
         window.addEventListener('resize', handleResize);
 
-        const messageListener = (message: any) => {
-            if (message.action === "WORD_SAVED") {
-                console.log("Instant update from extension!");
-                fetchWords();
+        // Listen for messages from Extension (Iframe Bridge)
+        const handleExtensionMessage = (event: MessageEvent) => {
+            // In production, check event.origin
+            if (event.data && event.data.type === 'LEXIDROP_ADD_WORD') {
+                const term = event.data.payload;
+                if (term) saveWord(term);
             }
         };
+        window.addEventListener('message', handleExtensionMessage);
 
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-            chrome.runtime.onMessage.addListener(messageListener);
-        }
+        // Legacy Chrome Runtime listener (optional, but keeping for safety if running as top-level ext page)
+        /* 
+        const messageListener = (message: any) => { ... } 
+        if (typeof chrome !== 'undefined' ...) ...
+        */
 
         return () => {
             clearInterval(interval);
             window.removeEventListener('resize', handleResize);
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-                chrome.runtime.onMessage.removeListener(messageListener);
-            }
+            window.removeEventListener('message', handleExtensionMessage);
         };
     }, []);
 
