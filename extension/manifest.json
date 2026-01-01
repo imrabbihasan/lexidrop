@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "LexiDrop: AI Vocabulary Tutor",
     "short_name": "LexiDrop",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Instantly capture words from any webpage. LexiDrop uses AI to generate translations and usage guides, then drops them into your personal gravity-physics whiteboard.",
     "author": "Your Name",
     "icons": {
