@@ -23,14 +23,20 @@
     "side_panel": {
         "default_path": "sidepanel.html"
     },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
     "permissions": [
         "sidePanel",
         "contextMenus",
         "notifications",
+        "storage",
         "activeTab"
     ],
     "host_permissions": [
-        "http://localhost:3000/*"
+        "https://openrouter.ai/*",
+        "https://api.deepseek.com/*"
     ],
     "web_accessible_resources": [
         {
