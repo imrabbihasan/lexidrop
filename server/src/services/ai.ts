@@ -24,21 +24,28 @@ export async function explainWord(text: string): Promise<ExplainWordResult> {
         });
     }
 
-    const systemPrompt = `You are an expert linguist. Translate and explain the word.
+    const systemPrompt = `You are a strict translation engine.
 Task:
-1. Detect language.
-2. Translate to English.
-3. Translate to Bengali (Mandatory).
-4. Provide Pinyin if Chinese.
-5. Provide a concise usage explanation.
+1. Detect legitimate language.
+2. Logic:
+   - IF Input is ENGLISH:
+     "translatedText": "BENGALI Translation" (MUST be Bengali script)
+     "secondaryTerm": "Short English Definition"
+   
+   - IF Input is NOT ENGLISH (e.g. Chinese, Spanish):
+     "translatedText": "ENGLISH Translation"
+     "secondaryTerm": "BENGALI Translation"
 
-Constraint: Return ONLY raw JSON. Do NOT use markdown code blocks.
+3. Provide Pinyin if Chinese.
+4. Provide concise usage/meaning.
+
+Constraint: Return ONLY raw JSON.
 
 Required JSON Structure:
 {
   "language": "Detected language",
-  "translatedText": "English translation",
-  "secondaryTerm": "Bengali translation",
+  "translatedText": "Primary Translation (See Logic)",
+  "secondaryTerm": "Secondary Translation (See Logic)",
   "pinyin": "Pinyin or null",
   "usageMarkdown": "Explanation"
 }`;
@@ -58,9 +65,27 @@ Required JSON Structure:
 
         const result = parseJSONSafe(content);
 
+        // logic to enforce Bengali as primary translation for English inputs
+        let finalTranslatedText = result.translatedText;
+        let finalSecondaryTerm = result.secondaryTerm;
+
+        const isEnglish = (result.language || "").toLowerCase().includes("english");
+
+        if (isEnglish) {
+            // Check if the AI put the Bengali translation in 'secondaryTerm' instead of 'translatedText'
+            const secondaryIsBengali = /[\u0980-\u09FF]/.test(result.secondaryTerm || "");
+            const translatedIsBengali = /[\u0980-\u09FF]/.test(result.translatedText || "");
+
+            // If secondary is Bengali but primary isn't, swap them so the UI shows Bengali
+            if (secondaryIsBengali && !translatedIsBengali) {
+                finalTranslatedText = result.secondaryTerm;
+                finalSecondaryTerm = result.translatedText;
+            }
+        }
+
         return {
-            translatedText: result.translatedText || text,
-            secondaryTranslation: result.secondaryTerm || "...",
+            translatedText: finalTranslatedText || text,
+            secondaryTranslation: finalSecondaryTerm || "...",
             pinyin: result.pinyin || undefined,
             explanation: result.usageMarkdown || "No explanation.",
             language: result.language || "Unknown",

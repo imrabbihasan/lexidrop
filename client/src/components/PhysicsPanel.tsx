@@ -12,6 +12,7 @@ interface PhysicsItem {
     secondaryTranslation?: string;
     pinyin?: string;
     language?: string;
+    explanation?: string;
     color: string;
     width: number;
     height: number;
@@ -146,6 +147,7 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                     secondaryTranslation: w.secondaryTranslation || undefined,
                     pinyin: w.pinyin || undefined,
                     language: w.language || undefined,
+                    explanation: w.explanation || undefined,
                     color: STICKY_COLORS[w.id % STICKY_COLORS.length],
                     width,
                     height,
@@ -374,6 +376,10 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                     <div
                         key={item.id}
                         onDoubleClick={() => speakWord(item.originalText)}
+                        onClick={() => {
+                            const fullWord = words.find(w => w.id === item.id);
+                            if (fullWord) setSelectedWord(fullWord);
+                        }}
                         onMouseEnter={() => setHoveredId(item.id)}
                         onMouseLeave={() => setHoveredId(null)}
                         style={{
@@ -424,6 +430,28 @@ const PhysicsPanel: React.FC<PhysicsBoardProps> = ({ words, onDeleteWord, isStud
                                     {item.secondaryTranslation && (
                                         <div style={{ fontSize: '0.9em', color: '#777', fontStyle: 'italic' }}>
                                             {item.secondaryTranslation}
+                                        </div>
+                                    )}
+                                    {/* Deep Meaning / Usage Snippet */}
+                                    {item.explanation && (
+                                        <div style={{
+                                            fontSize: '0.75em',
+                                            color: '#555',
+                                            marginTop: 5,
+                                            lineHeight: '1.3',
+                                            // Enable scrolling for deep meaning
+                                            maxHeight: '60px',
+                                            overflowY: 'auto',
+                                            fontStyle: 'italic',
+                                            borderTop: '1px dotted #aaa',
+                                            paddingTop: 4,
+                                            textAlign: 'left' // Better readability for paragraphs
+                                        }}
+                                            // Stop event propagation so scrolling doesn't drag the card
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onTouchStart={(e) => e.stopPropagation()}
+                                        >
+                                            "{item.explanation}"
                                         </div>
                                     )}
                                 </div>
