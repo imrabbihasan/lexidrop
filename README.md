@@ -48,7 +48,7 @@ LexiDrop requires an AI API key to function. We recommend **Google Gemini** for 
 
 ### 3. Configure LexiDrop
 - Click the LexiDrop extension icon in your browser toolbar.
-- Go to **Settings**.
+- Go to **Settings** - **Options**.
 - Paste your API Key into the field and click **Save**.
 
 ### 4. Start Collecting!
