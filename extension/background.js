@@ -1,38 +1,79 @@
-// LexiDrop Background Script (Bridge Mode)
+import { MESSAGE_TYPES } from "./lib/constants.js";
+import { setPendingSelection } from "./lib/storage.js";
 
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.create({
-        id: "save-to-lexidrop",
-        title: "Understand \"%s\" with LexiDrop",
-        contexts: ["selection"]
+const CONTEXT_MENU_ID = "lexidrop-understand-text";
+
+async function createContextMenu() {
+  try {
+    await chrome.contextMenus.removeAll();
+  } catch (_error) {
+    // Ignore startup race conditions.
+  }
+
+  chrome.contextMenus.create({
+    id: CONTEXT_MENU_ID,
+    title: 'Understand "%s" with LexiDrop',
+    contexts: ["selection"],
+  });
+}
+
+async function openPanel(windowId) {
+  await chrome.sidePanel.open({ windowId });
+}
+
+async function queueSelection(selection) {
+  await setPendingSelection(selection);
+
+  try {
+    await chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.UNDERSTAND_TEXT_REQUEST,
+      payload: selection,
     });
+  } catch (_error) {
+    // The side panel may not be ready yet. It will read the pending selection on load.
+  }
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await createContextMenu();
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-    if (info.menuItemId !== "save-to-lexidrop" || !info.selectionText) return;
+chrome.runtime.onStartup.addListener(async () => {
+  await createContextMenu();
+});
 
-    const term = info.selectionText.trim();
-    console.log("[LexiDrop] Selected text:", term);
+chrome.action.onClicked.addListener((tab) => {
+  if (!tab.windowId) return;
 
-    // 1. Open Side Panel
-    try {
-        await chrome.sidePanel.open({ windowId: tab.windowId });
-    } catch (err) {
-        console.error("[LexiDrop] Failed to open side panel:", err);
-    }
+  openPanel(tab.windowId).catch((error) => {
+    console.error("[LexiDrop] Failed to open side panel from toolbar:", error);
+  });
+});
 
-    // 2. Wait briefly for panel to open (if not already), then send message
-    // The sidepanel.js will relay this to the React app
-    setTimeout(() => {
-        chrome.runtime.sendMessage({
-            action: "UNDERSTAND_TEXT_REQUEST",
-            term: term
-        }).catch(() => {
-            console.log("Side panel not ready yet. Retrying...");
-            // Simple retry once
-            setTimeout(() => {
-                chrome.runtime.sendMessage({ action: "UNDERSTAND_TEXT_REQUEST", term: term }).catch(e => console.log("Final send failed", e));
-            }, 500);
-        });
-    }, 300);
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== CONTEXT_MENU_ID || !info.selectionText || !tab?.windowId) {
+    return;
+  }
+
+  const text = info.selectionText.trim();
+  if (!text) return;
+
+  const selection = {
+    text,
+    pageTitle: tab.title || "",
+    pageUrl: tab.url || "",
+    pageDomain: (() => {
+      try {
+        return new URL(tab.url || "").hostname.replace(/^www\./, "");
+      } catch {
+        return "";
+      }
+    })(),
+  };
+
+  openPanel(tab.windowId)
+    .then(() => queueSelection(selection))
+    .catch((error) => {
+      console.error("[LexiDrop] Failed to open side panel:", error);
+    });
 });

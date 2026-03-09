@@ -1,60 +1,69 @@
-const DEFAULT_PROVIDER_CONFIG = {
-    provider: "openrouter",
-    model: "moonshotai/kimi-k2-instruct-0905",
-    apiKey: "",
-};
+import { getProviderEntries, getProvider } from "./lib/providers.js";
+import { getProviderConfig, saveProviderConfig } from "./lib/storage.js";
 
-function getElements() {
-    return {
-        provider: document.getElementById("provider"),
-        model: document.getElementById("model"),
-        apiKey: document.getElementById("apiKey"),
-        status: document.getElementById("status"),
-        save: document.getElementById("save"),
-    };
+const form = document.getElementById("settings-form");
+const providerSelect = document.getElementById("provider");
+const modelInput = document.getElementById("model");
+const apiKeyInput = document.getElementById("api-key");
+const status = document.getElementById("status");
+
+function setStatus(message) {
+  status.textContent = message;
 }
 
-function normalizeStoredConfig(result) {
-    const legacyKey = result.userGeminiKey || "";
-    const stored = result.providerConfig || {};
-
-    return {
-        provider: stored.provider || DEFAULT_PROVIDER_CONFIG.provider,
-        model: stored.model || DEFAULT_PROVIDER_CONFIG.model,
-        apiKey: stored.apiKey || legacyKey || DEFAULT_PROVIDER_CONFIG.apiKey,
-    };
+function renderProviderOptions() {
+  providerSelect.innerHTML = getProviderEntries()
+    .map(
+      (provider) =>
+        `<option value="${provider.id}">${provider.label}</option>`
+    )
+    .join("");
 }
 
-function saveOptions() {
-    const { provider, model, apiKey, status } = getElements();
+function syncModelPlaceholder() {
+  const provider = getProvider(providerSelect.value);
+  modelInput.placeholder = provider.defaultModel;
+  apiKeyInput.placeholder = provider.apiKeyPlaceholder;
 
-    const providerConfig = {
-        provider: provider.value,
-        model: model.value.trim(),
-        apiKey: apiKey.value.trim(),
-    };
-
-    chrome.storage.sync.set({ providerConfig }, () => {
-        status.style.display = "block";
-        setTimeout(() => {
-            status.style.display = "none";
-        }, 2000);
-    });
+  if (!modelInput.value.trim()) {
+    modelInput.value = provider.defaultModel;
+  }
 }
 
-function restoreOptions() {
-    const { provider, model, apiKey } = getElements();
+async function loadSettings() {
+  renderProviderOptions();
 
-    chrome.storage.sync.get(["providerConfig", "userGeminiKey"], (result) => {
-        const config = normalizeStoredConfig(result);
-        provider.value = config.provider;
-        model.value = config.model;
-        apiKey.value = config.apiKey;
-    });
+  const config = await getProviderConfig();
+  providerSelect.value = config.provider;
+  modelInput.value = config.model;
+  apiKeyInput.value = config.apiKey;
+  syncModelPlaceholder();
+  setStatus("Ready");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const { save } = getElements();
-    restoreOptions();
-    save.addEventListener("click", saveOptions);
+providerSelect.addEventListener("change", () => {
+  const provider = getProvider(providerSelect.value);
+  modelInput.value = provider.defaultModel;
+  syncModelPlaceholder();
+  setStatus("Unsaved changes");
 });
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const nextConfig = {
+    provider: providerSelect.value,
+    model: modelInput.value.trim(),
+    apiKey: apiKeyInput.value.trim(),
+  };
+
+  if (!nextConfig.apiKey) {
+    setStatus("API key required");
+    return;
+  }
+
+  await saveProviderConfig(nextConfig);
+  setStatus("Saved");
+});
+
+loadSettings();

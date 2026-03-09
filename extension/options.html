@@ -1,94 +1,216 @@
 <!DOCTYPE html>
-<html>
-
-<head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LexiDrop Settings</title>
     <style>
-        body {
-            font-family: system-ui, sans-serif;
-            padding: 20px;
-            max-width: 420px;
-            color: #e5eef8;
-            background: #0b1220;
+      :root {
+        color-scheme: dark;
+        --bg: #080b11;
+        --panel: rgba(15, 20, 31, 0.96);
+        --border: rgba(155, 171, 194, 0.18);
+        --text: #f7f9fc;
+        --muted: #9ba8bb;
+        --accent: #84bdf9;
+        --accent-soft: rgba(132, 189, 249, 0.14);
+        font-family: "Inter", "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top, rgba(132, 189, 249, 0.14), transparent 35%),
+          linear-gradient(180deg, #0a0d13 0%, #06080c 100%);
+        color: var(--text);
+      }
+
+      .shell {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 40px 24px 64px;
+      }
+
+      .panel {
+        padding: 26px;
+        border-radius: 28px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+      }
+
+      .eyebrow {
+        width: fit-content;
+        margin-bottom: 14px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 32px;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      form {
+        margin-top: 28px;
+        display: grid;
+        gap: 18px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .field-help {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 13px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        font: inherit;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 6px;
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #8ac2ff 0%, #9dc7ff 100%);
+        color: #08111d;
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .list {
+        margin-top: 24px;
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .list strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .list ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      @media (max-width: 520px) {
+        .shell {
+          padding: 20px 14px 36px;
         }
 
-        h2 {
-            margin: 0 0 8px;
+        .panel {
+          padding: 18px;
+          border-radius: 22px;
         }
 
-        p {
-            margin: 0 0 18px;
-            color: #9fb0c3;
-            line-height: 1.5;
+        h1 {
+          font-size: 26px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 14px;
+        .actions {
+          align-items: stretch;
+          flex-direction: column;
         }
 
-        select,
-        input {
-            width: 100%;
-            padding: 10px 12px;
-            margin-bottom: 16px;
-            box-sizing: border-box;
-            border-radius: 10px;
-            border: 1px solid #23314a;
-            background: #101a2d;
-            color: #f8fbff;
+        .actions button,
+        .actions .status {
+          width: 100%;
         }
-
-        button {
-            padding: 10px 16px;
-            background: #d9f5ff;
-            color: #07101b;
-            border: none;
-            cursor: pointer;
-            border-radius: 999px;
-            font-weight: 700;
-        }
-
-        #status {
-            margin-top: 12px;
-            color: #bcefd1;
-            display: none;
-            font-size: 14px;
-        }
-
-        .hint {
-            margin-top: -8px;
-            margin-bottom: 16px;
-            color: #7f93ab;
-            font-size: 12px;
-        }
+      }
     </style>
-</head>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <div class="eyebrow">Extension settings</div>
+        <h1>Configure LexiDrop</h1>
+        <p>Choose a provider, confirm the model, and add the API key LexiDrop should use when you highlight text.</p>
 
-<body>
-    <h2>LexiDrop Settings</h2>
-    <p>Choose a provider, model, and API key for in-page translation and explanation.</p>
+        <form id="settings-form">
+          <label>
+            Provider
+            <span class="field-help">Select the API provider that will handle translation and explanation.</span>
+            <select id="provider" name="provider"></select>
+          </label>
 
-    <label for="provider">Provider</label>
-    <select id="provider">
-        <option value="openrouter">OpenRouter</option>
-        <option value="deepseek">DeepSeek</option>
-        <option value="groq">Groq</option>
-    </select>
+          <label>
+            Model
+            <span class="field-help">Use the provider's default model or enter another supported chat model.</span>
+            <input id="model" name="model" type="text" autocomplete="off" spellcheck="false" />
+          </label>
 
-    <label for="model">Model</label>
-    <input type="text" id="model" placeholder="moonshotai/kimi-k2-instruct-0905" />
-    <div class="hint">Use the exact model id for the selected provider.</div>
+          <label>
+            API key
+            <span class="field-help">This key is stored in extension sync storage and used only for your LexiDrop requests.</span>
+            <input id="api-key" name="api-key" type="password" autocomplete="off" spellcheck="false" />
+          </label>
 
-    <label for="apiKey">API Key</label>
-    <input type="password" id="apiKey" placeholder="Enter your API key" />
+          <div class="actions">
+            <button type="submit">Save settings</button>
+            <span id="status" class="status">Not saved yet</span>
+          </div>
+        </form>
 
-    <button id="save">Save Settings</button>
-    <div id="status">Settings saved.</div>
+        <div class="list">
+          <strong>What LexiDrop needs</strong>
+          <ul>
+            <li>A valid API key for the selected provider</li>
+            <li>A supported chat model name</li>
+            <li>Highlighted Chinese or English text from the page</li>
+          </ul>
+        </div>
+      </section>
+    </main>
 
-    <script src="options.js"></script>
-</body>
-
+    <script type="module" src="options.js"></script>
+  </body>
 </html>

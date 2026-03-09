@@ -1,81 +1,424 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LexiDrop</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #090c12;
+        --panel: rgba(15, 20, 31, 0.94);
+        --border: rgba(155, 171, 194, 0.16);
+        --text: #f7f9fc;
+        --muted: #9aa6ba;
+        --accent: #84bdf9;
+        --accent-soft: rgba(132, 189, 249, 0.14);
+        --error: #f2a6a6;
+        --success: #9ee1be;
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        font-family: "Inter", "Segoe UI", sans-serif;
+      }
 
-<head>
-  <title>LexiDrop</title>
-  <style>
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top, rgba(132, 189, 249, 0.14), transparent 34%),
+          linear-gradient(180deg, #0a0d13 0%, #06080c 100%);
+        color: var(--text);
+      }
+      button, input, select, textarea { font: inherit; }
+      .shell { min-height: 100vh; padding: 18px; }
+      .frame { display: flex; flex-direction: column; gap: 16px; }
+      .topbar, .tabbar, .hero, .card, .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+      .topbar {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px;
+      }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand img { width: 30px; height: 30px; border-radius: 10px; }
+      .brand strong { display: block; font-size: 14px; }
+      .brand span, .muted, .meta, .empty-copy, .field-help { color: var(--muted); }
+      .ghost-button, .primary-button, .secondary-button, .tab-button, .chip-button, .choice-button {
+        appearance: none; border: 0; cursor: pointer;
+      }
+      .ghost-button, .tab-button, .chip-button, .secondary-button, .choice-button {
+        background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border);
+      }
+      .ghost-button, .secondary-button, .primary-button, .chip-button, .tab-button, .choice-button { padding: 10px 12px; border-radius: 12px; }
+      .primary-button { background: linear-gradient(135deg, #8ac2ff 0%, #9dc7ff 100%); color: #08111d; font-weight: 700; }
+      .tabbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 8px; }
+      .tab-button.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(132, 189, 249, 0.2); }
+      .hero, .card, .panel { padding: 18px; }
+      .hero { display: flex; flex-direction: column; gap: 12px; }
+      .eyebrow { width: fit-content; padding: 7px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+      h1, h2, h3, p { margin: 0; }
+      h1 { font-size: 25px; line-height: 1.12; letter-spacing: -0.03em; }
+      .action-row, .result-actions, .filters, .split-actions, .map-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .status-inline { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+      .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.16); border-top-color: var(--accent); animation: spin 1s linear infinite; }
+      .hidden { display: none !important; }
+      .section-title { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+      .source-box, .soft-box, .list-card, .review-card, .map-shell, .map-detail { padding: 14px; border-radius: 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.05); }
+      .result-stack, .list-stack, .detail-stack, .review-stack, .map-stack { display: grid; gap: 14px; }
+      .translation { font-size: 20px; line-height: 1.45; font-weight: 600; }
+      .meta-line { display: flex; flex-wrap: wrap; gap: 8px; }
+      .meta-chip { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); color: var(--muted); font-size: 12px; }
+      .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .filters { margin-bottom: 12px; }
+      input, select, textarea { width: 100%; padding: 12px 13px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text); }
+      textarea { min-height: 88px; resize: vertical; }
+      .filter-input { flex: 1 1 220px; }
+      .filter-select { flex: 0 0 130px; }
+      .list-card { display: grid; gap: 10px; }
+      .list-card strong { font-size: 15px; line-height: 1.5; }
+      .list-card p { color: #d8e1ee; line-height: 1.55; }
+      .list-card .muted { font-size: 13px; }
+      .detail-editor { display: grid; gap: 10px; }
+      .split-actions { justify-content: space-between; align-items: center; }
+      .count-badge { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); color: var(--muted); font-size: 12px; }
+      .review-card h3, .map-detail h3 { font-size: 18px; line-height: 1.4; }
+      .choice-list { display: grid; gap: 10px; }
+      .choice-button { text-align: left; }
+      .choice-button.correct { border-color: rgba(158, 225, 190, 0.5); background: rgba(158, 225, 190, 0.12); }
+      .choice-button.incorrect { border-color: rgba(242, 166, 166, 0.45); background: rgba(242, 166, 166, 0.12); }
+      .success-note { color: var(--success); font-size: 13px; }
+      .error-copy { color: var(--error); }
+      .map-shell { padding: 10px; }
+      .map-canvas { width: 100%; display: block; border-radius: 16px; background: radial-gradient(circle at top, rgba(132, 189, 249, 0.1), transparent 34%), linear-gradient(180deg, rgba(11, 15, 24, 0.96) 0%, rgba(7, 10, 16, 0.98) 100%); }
+      .map-caption { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+      .map-detail { display: grid; gap: 12px; }
+      .map-empty { display: grid; gap: 10px; }
+      .stage-new { color: #9aa6ba; }
+      .stage-reviewed { color: #84bdf9; }
+      .stage-strong { color: #a7e7c1; }
+      .stage-mastered { color: #f1d38b; }
 
-    #status-container {
-      display: none;
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 8px 16px;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      border-radius: 20px;
-      font-size: 12px;
-      z-index: 9999;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+      @media (max-width: 520px) {
+        .shell {
+          padding: 12px;
+        }
 
-    .status-loading {
-      color: white;
-    }
+        .topbar,
+        .hero,
+        .card,
+        .panel {
+          padding: 14px;
+          border-radius: 18px;
+        }
 
-    .status-success {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
-    }
+        .topbar,
+        .panel-header,
+        .split-actions {
+          align-items: flex-start;
+          flex-direction: column;
+        }
 
-    .status-error {
-      background: #fef2f2;
-      border-color: #fca5a5;
-      color: #dc2626;
-    }
+        .topbar {
+          gap: 10px;
+        }
 
-    .result-card h3 {
-      margin: 0 0 5px 0;
-      font-size: 1.2rem;
-    }
+        .topbar > .ghost-button,
+        .panel-header > .count-badge,
+        .panel-header > .primary-button,
+        .split-actions > .count-badge,
+        .split-actions > .secondary-button {
+          width: 100%;
+        }
 
-    .result-card .secondary {
-      color: #666;
-      margin: 0 0 10px 0;
-      font-style: italic;
-    }
+        .tabbar {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
 
-    .result-card .usage {
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
+        .tab-button {
+          min-height: 42px;
+          padding: 10px 8px;
+          font-size: 12px;
+        }
 
-    iframe {
-      width: 100%;
-      height: 100%;
-      /* Ideally calc(100% - statusHeight) but overlay is fine */
-      border: none;
-      display: block;
-    }
-  </style>
-</head>
+        .filters,
+        .action-row,
+        .result-actions,
+        .map-actions {
+          flex-direction: column;
+        }
 
-<body>
-  <div id="status-container"></div>
+        .filter-input,
+        .filter-select,
+        .action-row > *,
+        .result-actions > *,
+        .map-actions > *,
+        .detail-editor > *,
+        .hero .action-row > * {
+          width: 100%;
+        }
 
-  <iframe src="dist/index.html"></iframe>
+        .meta-line {
+          gap: 6px;
+        }
 
-  <script src="sidepanel.js"></script>
-</body>
+        .translation {
+          font-size: 18px;
+        }
 
+        .map-caption {
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .shell {
+          padding: 10px;
+        }
+
+        .tabbar {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        h1 {
+          font-size: 22px;
+        }
+
+        .brand {
+          align-items: flex-start;
+        }
+
+        .brand img {
+          width: 26px;
+          height: 26px;
+        }
+
+        .source-box,
+        .soft-box,
+        .list-card,
+        .review-card,
+        .map-shell,
+        .map-detail {
+          padding: 12px;
+        }
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="frame">
+        <header class="topbar">
+          <div class="brand">
+            <img src="logo.png" alt="LexiDrop logo" />
+            <div>
+              <strong>LexiDrop</strong>
+              <span class="muted">Reading assistant</span>
+            </div>
+          </div>
+          <button id="open-settings" class="ghost-button" type="button">Settings</button>
+        </header>
+
+        <nav class="tabbar">
+          <button class="tab-button active" data-tab="result" type="button">Result</button>
+          <button class="tab-button" data-tab="saved" type="button">Saved</button>
+          <button class="tab-button" data-tab="history" type="button">History</button>
+          <button class="tab-button" data-tab="review" type="button">Review</button>
+          <button class="tab-button" data-tab="map" type="button">Map</button>
+        </nav>
+
+        <section data-panel="result" class="view-panel">
+          <section class="hero">
+            <div class="eyebrow">Translation first</div>
+            <h1>Understand Chinese and English text without leaving the page.</h1>
+            <p class="muted">Highlight text on any webpage and see Bengali translation, explanation, and pronunciation here.</p>
+            <div class="action-row">
+              <button id="retry-button" class="primary-button hidden" type="button">Try again</button>
+              <button id="hero-settings" class="secondary-button" type="button">Open settings</button>
+            </div>
+            <div id="loading-indicator" class="status-inline hidden">
+              <span class="spinner" aria-hidden="true"></span>
+              <span>Understanding text...</span>
+            </div>
+          </section>
+
+          <section id="empty-state" class="panel">
+            <h2>Understand text without leaving the page</h2>
+            <p class="empty-copy">Highlight Chinese or English text, then choose LexiDrop from the context menu.</p>
+          </section>
+
+          <section id="error-state" class="panel hidden">
+            <h2>Something went wrong</h2>
+            <p id="error-message" class="error-copy">Could not parse the response.</p>
+            <div class="action-row" style="margin-top: 12px;">
+              <button id="error-retry" class="primary-button" type="button">Try again</button>
+              <button id="error-settings" class="secondary-button" type="button">Open settings</button>
+            </div>
+          </section>
+
+          <section id="result-card" class="card hidden">
+            <div class="panel-header">
+              <div>
+                <h2>Understanding</h2>
+                <p class="muted">Translation first, then context and pronunciation.</p>
+              </div>
+              <div id="result-status" class="meta-chip">Ready</div>
+            </div>
+
+            <div class="result-stack">
+              <div>
+                <div class="section-title">Selected text</div>
+                <div id="source-text" class="source-box"></div>
+              </div>
+
+              <div>
+                <div class="section-title">Bengali translation</div>
+                <div id="translation" class="translation"></div>
+              </div>
+
+              <div>
+                <div class="section-title">Explanation</div>
+                <div id="explanation"></div>
+              </div>
+
+              <div>
+                <div class="section-title">Pronunciation</div>
+                <div id="pronunciation"></div>
+              </div>
+
+              <div id="quiz-section" class="hidden">
+                <div class="section-title">Quick quiz</div>
+                <div class="soft-box">
+                  <div id="quiz-question"></div>
+                  <div id="quiz-answer" class="muted" style="margin-top: 8px;"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="section-title">Source</div>
+                <div id="source-meta" class="meta-line"></div>
+              </div>
+
+              <div class="result-actions">
+                <button id="save-button" class="secondary-button" type="button">Save</button>
+                <span id="save-feedback" class="success-note hidden">Saved</span>
+              </div>
+
+              <div id="saved-editor" class="detail-editor hidden">
+                <div class="section-title">Saved details</div>
+                <input id="saved-tag" type="text" placeholder="Tag or collection" />
+                <textarea id="saved-note" placeholder="Optional note"></textarea>
+                <div class="action-row">
+                  <button id="update-saved-meta" class="secondary-button" type="button">Update saved item</button>
+                  <span id="meta-feedback" class="success-note hidden">Updated</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section data-panel="saved" class="view-panel hidden">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Saved</h2>
+                <p class="muted">Keep useful words, phrases, and sentences for later.</p>
+              </div>
+              <div id="saved-count" class="count-badge">0 items</div>
+            </div>
+            <div class="filters">
+              <input id="saved-search" class="filter-input" type="search" placeholder="Search saved items" />
+              <select id="saved-type" class="filter-select">
+                <option value="all">All types</option>
+                <option value="word">Word</option>
+                <option value="phrase">Phrase</option>
+                <option value="sentence">Sentence</option>
+              </select>
+              <select id="saved-language" class="filter-select">
+                <option value="all">All languages</option>
+                <option value="chinese">Chinese</option>
+                <option value="english">English</option>
+              </select>
+            </div>
+            <div id="saved-list" class="list-stack"></div>
+          </section>
+        </section>
+
+        <section data-panel="history" class="view-panel hidden">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>History</h2>
+                <p class="muted">Recent lookups. Newest first.</p>
+              </div>
+              <div id="history-count" class="count-badge">0 items</div>
+            </div>
+            <div class="filters">
+              <input id="history-search" class="filter-input" type="search" placeholder="Search recent lookups" />
+              <select id="history-language" class="filter-select">
+                <option value="all">All languages</option>
+                <option value="chinese">Chinese</option>
+                <option value="english">English</option>
+              </select>
+            </div>
+            <div id="history-list" class="list-stack"></div>
+          </section>
+        </section>
+
+        <section data-panel="review" class="view-panel hidden">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Review</h2>
+                <p class="muted">Run through a few saved items without leaving the extension.</p>
+              </div>
+              <button id="start-review" class="primary-button" type="button">Review 5 items</button>
+            </div>
+            <div id="review-empty" class="soft-box">
+              <h3>Nothing to review yet</h3>
+              <p class="empty-copy">Save a few lookups first. Review uses your saved items only.</p>
+            </div>
+            <div id="review-session" class="review-stack hidden">
+              <div class="split-actions">
+                <div id="review-progress" class="count-badge">1 / 5</div>
+                <button id="next-review" class="secondary-button" type="button">Next item</button>
+              </div>
+              <div id="review-card" class="review-card"></div>
+            </div>
+          </section>
+        </section>
+
+        <section data-panel="map" class="view-panel hidden">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Constellation Memory Map</h2>
+                <p class="muted">See saved knowledge as clusters you can revisit and review.</p>
+              </div>
+              <div id="map-count" class="count-badge">0 nodes</div>
+            </div>
+            <div id="map-empty" class="map-empty soft-box hidden">
+              <h3>Your map is empty</h3>
+              <p class="empty-copy">Save words and phrases while browsing. Return here to see them gather into constellations.</p>
+            </div>
+            <div id="map-stack" class="map-stack hidden">
+              <div class="map-shell">
+                <svg id="map-svg" class="map-canvas" viewBox="0 0 320 320" role="img" aria-label="Constellation memory map"></svg>
+                <div class="map-caption">
+                  <span>Clusters follow shared tags when they exist. Otherwise they group by source language.</span>
+                  <span>Glow reflects review strength.</span>
+                </div>
+              </div>
+              <div id="map-detail" class="map-detail"></div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
 </html>
