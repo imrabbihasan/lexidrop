@@ -7,48 +7,83 @@
         body {
             font-family: system-ui, sans-serif;
             padding: 20px;
-            max-width: 400px;
+            max-width: 420px;
+            color: #e5eef8;
+            background: #0b1220;
+        }
+
+        h2 {
+            margin: 0 0 8px;
+        }
+
+        p {
+            margin: 0 0 18px;
+            color: #9fb0c3;
+            line-height: 1.5;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 14px;
         }
 
+        select,
         input {
             width: 100%;
-            padding: 8px;
-            margin-bottom: 15px;
+            padding: 10px 12px;
+            margin-bottom: 16px;
             box-sizing: border-box;
+            border-radius: 10px;
+            border: 1px solid #23314a;
+            background: #101a2d;
+            color: #f8fbff;
         }
 
         button {
-            padding: 8px 16px;
-            background: #667eea;
-            color: white;
+            padding: 10px 16px;
+            background: #d9f5ff;
+            color: #07101b;
             border: none;
             cursor: pointer;
-            border-radius: 4px;
-        }
-
-        button:hover {
-            background: #5a6fd1;
+            border-radius: 999px;
+            font-weight: 700;
         }
 
         #status {
-            margin-top: 10px;
-            color: green;
+            margin-top: 12px;
+            color: #bcefd1;
             display: none;
+            font-size: 14px;
+        }
+
+        .hint {
+            margin-top: -8px;
+            margin-bottom: 16px;
+            color: #7f93ab;
+            font-size: 12px;
         }
     </style>
 </head>
 
 <body>
     <h2>LexiDrop Settings</h2>
+    <p>Choose a provider, model, and API key for in-page translation and explanation.</p>
 
-    <label for="apiKey">OpenRouter/DeepSeek API Key:</label>
-    <input type="password" id="apiKey" placeholder="sk-or-..." />
+    <label for="provider">Provider</label>
+    <select id="provider">
+        <option value="openrouter">OpenRouter</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="groq">Groq</option>
+    </select>
+
+    <label for="model">Model</label>
+    <input type="text" id="model" placeholder="moonshotai/kimi-k2-instruct-0905" />
+    <div class="hint">Use the exact model id for the selected provider.</div>
+
+    <label for="apiKey">API Key</label>
+    <input type="password" id="apiKey" placeholder="Enter your API key" />
 
     <button id="save">Save Settings</button>
     <div id="status">Settings saved.</div>

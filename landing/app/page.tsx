@@ -151,6 +151,9 @@ function ProductMockup() {
 }
 
 export default function Home() {
+  const installUrl =
+    "https://microsoftedge.microsoft.com/addons/detail/lexidrop-ai-vocabulary-t/kkidkhomhljchjdhbbggjjchhnnipnji";
+
   return (
     <div className="min-h-screen bg-[#050b14] text-slate-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(188,242,255,0.12),_transparent_35%),radial-gradient(circle_at_80%_18%,_rgba(255,201,224,0.08),_transparent_24%),radial-gradient(circle_at_30%_100%,_rgba(189,204,255,0.08),_transparent_28%)]" />
@@ -179,7 +182,9 @@ export default function Home() {
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <a
-                    href="#cta"
+                    href={installUrl}
+                    target="_blank"
+                    rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-full bg-[#d9f5ff] px-6 py-3 text-sm font-semibold text-[#07101b] transition hover:bg-[#eefbff]"
                   >
                     Install Extension
@@ -263,7 +268,9 @@ export default function Home() {
               </h2>
               <div className="mt-8">
                 <a
-                  href="#"
+                  href={installUrl}
+                  target="_blank"
+                  rel="noreferrer"
                   className="inline-flex items-center rounded-full bg-[#d9f5ff] px-6 py-3 text-sm font-semibold text-[#07101b] transition hover:bg-[#eefbff]"
                 >
                   Install LexiDrop
@@ -292,7 +299,12 @@ export default function Home() {
             <a href="#" className="transition hover:text-[#d9f5ff]">
               Contact
             </a>
-            <a href="#" className="transition hover:text-[#d9f5ff]">
+            <a
+              href="https://github.com/imrabbihasan/lexidrop.git"
+              target="_blank"
+              rel="noreferrer"
+              className="transition hover:text-[#d9f5ff]"
+            >
               GitHub
             </a>
           </div>

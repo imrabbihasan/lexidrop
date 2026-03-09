@@ -27,7 +27,7 @@ const SidePanel: React.FC = () => {
     const saveWord = async (text: string) => {
         try {
             // Show optimistic UI or toast?
-            console.log("Saving word from extension:", text);
+            console.log("Processing highlighted text from extension:", text);
             const response = await fetch('http://localhost:3001/api/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -38,7 +38,7 @@ const SidePanel: React.FC = () => {
             // Refresh words immediately
             fetchWords();
         } catch (error) {
-            console.error("Failed to save word:", error);
+            console.error("Failed to process text:", error);
         }
     };
 
@@ -52,7 +52,7 @@ const SidePanel: React.FC = () => {
         // Listen for messages from Extension (Iframe Bridge)
         const handleExtensionMessage = (event: MessageEvent) => {
             // In production, check event.origin
-            if (event.data && event.data.type === 'LEXIDROP_ADD_WORD') {
+            if (event.data && event.data.type === 'LEXIDROP_UNDERSTAND_TEXT') {
                 const term = event.data.payload;
                 if (term) saveWord(term);
             }
@@ -130,7 +130,7 @@ const SidePanel: React.FC = () => {
                         color: 'rgba(255,255,255,0.9)',
                         textShadow: '0 2px 4px rgba(0,0,0,0.2)'
                     }}>LexiDrop</h1>
-                    <p style={{ margin: 0, opacity: 0.8, fontSize: 12, color: 'white' }}>{words.length} words</p>
+                    <p style={{ margin: 0, opacity: 0.8, fontSize: 12, color: 'white' }}>{words.length} saved items</p>
                 </div>
 
                 {/* Controls Section */}
@@ -161,7 +161,7 @@ const SidePanel: React.FC = () => {
                             gap: 5
                         }}
                     >
-                        {isStudyMode ? '🎓 Learning' : '🧠 Study'}
+                        {isStudyMode ? '🎓 Quiz Mode' : '🧠 Quiz'}
                     </button>
                     <div style={{ width: 1, background: 'rgba(255,255,255,0.3)', margin: '0 2px' }} />
                     <button
@@ -178,7 +178,7 @@ const SidePanel: React.FC = () => {
                             transition: 'all 0.2s'
                         }}
                     >
-                        🎨 Canvas
+                        Focus
                     </button>
                     <button
                         onClick={() => setView('folders')}
@@ -194,7 +194,7 @@ const SidePanel: React.FC = () => {
                             transition: 'all 0.2s'
                         }}
                     >
-                        📁 Folders
+                        Saved
                     </button>
                 </div>
             </div>
@@ -217,7 +217,7 @@ const SidePanel: React.FC = () => {
                     fontFamily: 'Inter, system-ui, sans-serif'
                 }}>
                     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-                        <h1 style={{ marginBottom: 30, fontSize: isMobile ? 24 : 32 }}>🗂️ Vocabulary Collection</h1>
+                        <h1 style={{ marginBottom: 30, fontSize: isMobile ? 24 : 32 }}>Saved Text</h1>
                         {loading && <p>Loading...</p>}
 
                         {groupedWords.map(([language, group]) => (

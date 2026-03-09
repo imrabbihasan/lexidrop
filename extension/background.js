@@ -3,7 +3,7 @@
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: "save-to-lexidrop",
-        title: "Add '%s' to LexiDrop",
+        title: "Understand \"%s\" with LexiDrop",
         contexts: ["selection"]
     });
 });
@@ -12,7 +12,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId !== "save-to-lexidrop" || !info.selectionText) return;
 
     const term = info.selectionText.trim();
-    console.log("[LexiDrop] Selected term:", term);
+    console.log("[LexiDrop] Selected text:", term);
 
     // 1. Open Side Panel
     try {
@@ -25,13 +25,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     // The sidepanel.js will relay this to the React app
     setTimeout(() => {
         chrome.runtime.sendMessage({
-            action: "ADD_WORD_REQUEST",
+            action: "UNDERSTAND_TEXT_REQUEST",
             term: term
         }).catch(() => {
             console.log("Side panel not ready yet. Retrying...");
             // Simple retry once
             setTimeout(() => {
-                chrome.runtime.sendMessage({ action: "ADD_WORD_REQUEST", term: term }).catch(e => console.log("Final send failed", e));
+                chrome.runtime.sendMessage({ action: "UNDERSTAND_TEXT_REQUEST", term: term }).catch(e => console.log("Final send failed", e));
             }, 500);
         });
     }, 300);
