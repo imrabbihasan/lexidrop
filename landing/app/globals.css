@@ -1,9 +1,11 @@
-@import "tailwindcss";
+@import "../node_modules/tailwindcss/theme.css";
+@import "../node_modules/tailwindcss/preflight.css";
+@import "../node_modules/tailwindcss/utilities.css";
 
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: #0078d4;
+  --color-primary: #d9f5ff;
 
   --animate-fade-in-up: fade-in-up 0.8s ease-out forwards;
   --animate-fade-in: fade-in 0.6s ease-out forwards;
@@ -11,7 +13,7 @@
   @keyframes fade-in-up {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(18px);
     }
 
     to {
@@ -32,23 +34,30 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #1e293b;
-  /* slate-800 */
+  --background: #040b17;
+  --foreground: #eff4ff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    /* slate-900 */
-    --foreground: #f8fafc;
-    /* slate-50 */
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(circle at 20% 0%, #081329 0%, #040b17 45%, #02060f 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Manrope", "Avenir Next", "Segoe UI", "Roboto", sans-serif;
   scroll-behavior: smooth;
+  font-feature-settings: "liga" on, "calt" on;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
 }
