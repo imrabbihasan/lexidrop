@@ -1,6 +1,11 @@
 import { EMPTY_RESULT_TEXT, MESSAGE_TYPES } from "./lib/constants.js";
 import { understandText } from "./lib/ai.js";
 import {
+  buildCurrentResult,
+  getCurrentResult,
+  setCurrentResult,
+} from "./lib/current-result.js";
+import {
   addHistoryItem,
   buildConstellationMap,
   buildLookupRecord,
@@ -249,6 +254,44 @@ function renderResult(lookup) {
     elements.savedNote.value = "";
     elements.saveButton.textContent = "Save";
   }
+}
+
+function toResultViewModel(record) {
+  if (!record) {
+    return null;
+  }
+
+  return {
+    ...record,
+    translatedText: record.translatedText ?? record.translationBn ?? "",
+    pageUrl: record.pageUrl ?? record.sourceUrl ?? "",
+    lookedUpAt: record.lookedUpAt ?? record.timestamp ?? Date.now(),
+    updatedAt: record.updatedAt ?? record.timestamp ?? Date.now(),
+  };
+}
+
+async function persistCurrentResult(lookup) {
+  const persisted = await setCurrentResult(
+    lookup.translationBn
+      ? lookup
+      : buildCurrentResult({
+          text: lookup.originalText,
+          result: {
+            translation: lookup.translatedText,
+            explanation: lookup.explanation,
+            pronunciation: lookup.pronunciation,
+            quiz: lookup.quiz,
+          },
+          source: {
+            language: lookup.sourceLanguage,
+            pageUrl: lookup.pageUrl,
+            pageDomain: lookup.pageDomain,
+            pageTitle: lookup.pageTitle,
+          },
+        })
+  );
+  state.currentLookup = toResultViewModel(persisted);
+  return state.currentLookup;
 }
 
 function currentReviewItem() {
@@ -500,6 +543,7 @@ async function refreshMemory() {
 
   if (state.currentLookup) {
     const replacement = getSavedMatch(state.currentLookup) || state.currentLookup;
+    await setCurrentResult(replacement);
     renderResult(replacement);
   }
 }
@@ -529,17 +573,37 @@ async function runUnderstanding(selection) {
     });
 
     await addHistoryItem(lookup);
+    const persistedLookup = await persistCurrentResult(lookup);
     await refreshMemory();
-    renderResult(lookup);
+    renderResult(persistedLookup);
   } catch (error) {
     renderError(error.message || "Could not understand the selected text.");
   }
 }
 
-async function restorePendingSelection() {
-  const pending = await getPendingSelection();
-  if (!pending?.text) {
+async function initializePanel() {
+  const [savedItems, historyItems, currentResult, pending] = await Promise.all([
+    getSavedItems(),
+    getHistoryItems(),
+    getCurrentResult(),
+    getPendingSelection(),
+  ]);
+
+  state.savedItems = savedItems;
+  state.historyItems = historyItems;
+  renderSavedList();
+  renderHistoryList();
+  renderReviewState();
+  renderMap();
+
+  if (currentResult) {
+    state.currentLookup = toResultViewModel(currentResult);
+    renderResult(state.currentLookup);
+  } else {
     renderIdle();
+  }
+
+  if (!pending?.text) {
     return;
   }
 
@@ -556,6 +620,7 @@ async function handleSaveCurrent() {
     tag: existing?.tag || "",
   });
 
+  await persistCurrentResult(savedItem);
   state.mapSelectedId = savedItem.id;
   await refreshMemory();
   renderResult(savedItem);
@@ -573,7 +638,7 @@ async function handleUpdateSavedMeta() {
 
   if (!updated) return;
 
-  state.currentLookup = updated;
+  await persistCurrentResult(updated);
   state.mapSelectedId = updated.id;
   await refreshMemory();
   renderResult(updated);
@@ -581,7 +646,7 @@ async function handleUpdateSavedMeta() {
   setHidden(elements.metaFeedback, false);
 }
 
-function openLookupInResult(item) {
+async function openLookupInResult(item) {
   state.pendingSelection = {
     text: item.originalText,
     pageTitle: item.pageTitle,
@@ -589,6 +654,7 @@ function openLookupInResult(item) {
     pageDomain: item.pageDomain,
     language: item.sourceLanguage,
   };
+  await persistCurrentResult(item);
   setActiveTab("result");
   renderResult(item);
 }
@@ -630,7 +696,7 @@ async function handleSavedListClick(event) {
   if (!item) return;
 
   if (action === "open-saved") {
-    openLookupInResult(item);
+    await openLookupInResult(item);
     return;
   }
 
@@ -663,7 +729,7 @@ async function handleHistoryListClick(event) {
   if (!item) return;
 
   if (action === "open-history") {
-    openLookupInResult(item);
+    await openLookupInResult(item);
     return;
   }
 
@@ -701,7 +767,7 @@ async function handleReviewClick(event) {
 
   if (event.target.id === "open-review-result") {
     const item = currentReviewItem();
-    if (item) openLookupInResult(item);
+    if (item) await openLookupInResult(item);
   }
 }
 
@@ -721,7 +787,7 @@ async function handleMapClick(event) {
   if (!item) return;
 
   if (action === "open") {
-    openLookupInResult(item);
+    await openLookupInResult(item);
     return;
   }
 
@@ -790,4 +856,4 @@ function registerEvents() {
 }
 
 registerEvents();
-refreshMemory().then(restorePendingSelection);
+initializePanel();

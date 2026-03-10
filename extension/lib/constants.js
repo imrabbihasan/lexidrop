@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   PROVIDER_CONFIG: "providerConfig",
   LEGACY_GEMINI_KEY: "userGeminiKey",
   PENDING_SELECTION: "pendingSelection",
+  CURRENT_RESULT: "currentResult",
   SAVED_ITEMS: "savedItems",
   HISTORY_ITEMS: "historyItems",
 };
