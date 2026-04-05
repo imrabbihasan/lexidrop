@@ -67,7 +67,9 @@ export function buildLookupRecord({ text, result, source = {} }) {
     translatedText: normalizeText(result.translation),
     explanation: normalizeText(result.explanation),
     pronunciation: normalizeText(result.pronunciation),
+    pinyin: typeof result.pinyin === "string" ? normalizeText(result.pinyin) : null,
     quiz: result.quiz || null,
+    isFallback: result.isFallback || false,
     sourceLanguage,
     itemType,
     pageTitle: normalizeText(source.pageTitle),
@@ -90,6 +92,7 @@ function normalizeSavedItem(item) {
     ...item,
     note: normalizeText(item.note),
     tag: normalizeText(item.tag),
+    isFallback: item.isFallback || false,
     reviewCount,
     lastReviewedAt: item.lastReviewedAt || null,
     progressStage: deriveProgressStage(reviewCount),
@@ -197,6 +200,11 @@ export async function deleteHistoryItem(id) {
   const next = current.filter((item) => item.id !== id);
   await writeLocal(STORAGE_KEYS.HISTORY_ITEMS, next);
   return next;
+}
+
+export async function clearHistoryItems() {
+  await writeLocal(STORAGE_KEYS.HISTORY_ITEMS, []);
+  return [];
 }
 
 export function filterMemoryItems(items, filters = {}) {

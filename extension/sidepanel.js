@@ -16,6 +16,7 @@ import {
   filterMemoryItems,
   formatRelativeDate,
   getHistoryItems,
+  clearHistoryItems,
   getSavedItems,
   markSavedItemReviewed,
   saveLookupItem,
@@ -41,17 +42,18 @@ const elements = {
   errorState: document.getElementById("error-state"),
   errorMessage: document.getElementById("error-message"),
   loadingIndicator: document.getElementById("loading-indicator"),
-  resultCard: document.getElementById("result-card"),
+  activeState: document.getElementById("active-state"),
   resultStatus: document.getElementById("result-status"),
-  retryButton: document.getElementById("retry-button"),
   errorRetry: document.getElementById("error-retry"),
-  heroSettings: document.getElementById("hero-settings"),
   errorSettings: document.getElementById("error-settings"),
   openSettings: document.getElementById("open-settings"),
+  clearButton: document.getElementById("clear-button"),
+  retryButton: document.getElementById("retry-button"),
   translation: document.getElementById("translation"),
   explanation: document.getElementById("explanation"),
   pronunciation: document.getElementById("pronunciation"),
   sourceText: document.getElementById("source-text"),
+  pinyinDisplay: document.getElementById("pinyin-display"),
   sourceMeta: document.getElementById("source-meta"),
   quizSection: document.getElementById("quiz-section"),
   quizQuestion: document.getElementById("quiz-question"),
@@ -70,6 +72,7 @@ const elements = {
   savedLanguage: document.getElementById("saved-language"),
   historyList: document.getElementById("history-list"),
   historyCount: document.getElementById("history-count"),
+  clearHistoryButton: document.getElementById("clear-history-button"),
   historySearch: document.getElementById("history-search"),
   historyLanguage: document.getElementById("history-language"),
   reviewEmpty: document.getElementById("review-empty"),
@@ -83,6 +86,9 @@ const elements = {
   mapSvg: document.getElementById("map-svg"),
   mapDetail: document.getElementById("map-detail"),
   mapCount: document.getElementById("map-count"),
+  upsellBanner: document.getElementById("upsell-banner"),
+  upsellButton: document.getElementById("upsell-button"),
+  listenBtn: document.getElementById("listen-btn"),
 };
 
 const state = {
@@ -142,6 +148,34 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function playAudio(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const isChinese = /[\u4e00-\u9fa5]/.test(text);
+  utterance.lang = isChinese ? 'zh-CN' : 'en-US';
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    let voice;
+    if (isChinese) {
+      voice = voices.find(v => (v.name.includes('Xiaoxiao') || v.name.includes('Natural')) && v.lang.includes('zh'));
+      if (!voice) voice = voices.find(v => v.name.includes('Google 普通话'));
+      if (!voice) voice = voices.find(v => v.lang === 'zh-CN');
+    } else {
+      voice = voices.find(v => v.name.includes('Natural') && (v.lang.includes('en-US') || v.lang.includes('en-GB')));
+      if (!voice) voice = voices.find(v => v.name.includes('Google US English'));
+      if (!voice) voice = voices.find(v => v.lang === 'en-US');
+    }
+
+    if (voice) {
+      utterance.voice = voice;
+    }
+  }
+
+  window.speechSynthesis.speak(utterance);
+}
+
 function truncateLabel(value, max = 18) {
   const text = String(value || "");
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
@@ -159,14 +193,10 @@ function renderIdle() {
   state.currentSavedId = null;
 
   setHidden(elements.loadingIndicator, true);
-  setHidden(elements.resultCard, true);
+  setHidden(elements.activeState, true);
   setHidden(elements.errorState, true);
-  setHidden(elements.retryButton, true);
   setHidden(elements.savedEditor, true);
   setHidden(elements.emptyState, false);
-
-  elements.emptyState.querySelector("h2").textContent = EMPTY_RESULT_TEXT.idleTitle;
-  elements.emptyState.querySelector("p").textContent = EMPTY_RESULT_TEXT.idleBody;
 }
 
 function renderLoading(text) {
@@ -175,9 +205,8 @@ function renderLoading(text) {
 
   setHidden(elements.emptyState, true);
   setHidden(elements.errorState, true);
-  setHidden(elements.resultCard, true);
+  setHidden(elements.activeState, true);
   setHidden(elements.loadingIndicator, false);
-  setHidden(elements.retryButton, true);
   setHidden(elements.saveFeedback, true);
   setHidden(elements.metaFeedback, true);
   setHidden(elements.savedEditor, true);
@@ -190,9 +219,8 @@ function renderError(message) {
 
   setHidden(elements.loadingIndicator, true);
   setHidden(elements.emptyState, true);
-  setHidden(elements.resultCard, true);
+  setHidden(elements.activeState, true);
   setHidden(elements.errorState, false);
-  setHidden(elements.retryButton, Boolean(state.pendingSelection?.text || state.currentLookup?.originalText));
 
   elements.errorMessage.textContent = message;
 }
@@ -221,8 +249,7 @@ function renderResult(lookup) {
   setHidden(elements.loadingIndicator, true);
   setHidden(elements.emptyState, true);
   setHidden(elements.errorState, true);
-  setHidden(elements.resultCard, false);
-  setHidden(elements.retryButton, false);
+  setHidden(elements.activeState, false);
   setHidden(elements.saveFeedback, true);
   setHidden(elements.metaFeedback, true);
 
@@ -231,16 +258,37 @@ function renderResult(lookup) {
   elements.translation.textContent = lookup.translatedText || "No translation returned.";
   elements.explanation.textContent = lookup.explanation || "No explanation returned.";
   elements.pronunciation.textContent = lookup.pronunciation || "No pronunciation returned.";
+  
+  const isChinese = /[\u4e00-\u9fa5]/.test(lookup.originalText);
+  if (isChinese && window.pinyinPro) {
+    const pinyinText = window.pinyinPro.pinyin(lookup.originalText);
+    elements.pinyinDisplay.textContent = pinyinText;
+    setHidden(elements.pinyinDisplay, false);
+  } else if (lookup.pinyin) {
+    elements.pinyinDisplay.textContent = lookup.pinyin;
+    setHidden(elements.pinyinDisplay, false);
+  } else {
+    setHidden(elements.pinyinDisplay, true);
+  }
+
   renderSourceMeta(lookup, savedMatch);
 
-  if (lookup.quiz) {
-    setHidden(elements.quizSection, false);
-    elements.quizQuestion.textContent = lookup.quiz.question;
-    elements.quizAnswer.textContent = `Answer: ${lookup.quiz.answer}`;
-  } else {
+  setHidden(elements.listenBtn, !lookup.originalText);
+
+  if (lookup.isFallback) {
+    setHidden(elements.upsellBanner, false);
     setHidden(elements.quizSection, true);
-    elements.quizQuestion.textContent = "";
-    elements.quizAnswer.textContent = "";
+  } else {
+    setHidden(elements.upsellBanner, true);
+    if (lookup.quiz) {
+      setHidden(elements.quizSection, false);
+      elements.quizQuestion.textContent = lookup.quiz.question;
+      elements.quizAnswer.textContent = `Answer: ${lookup.quiz.answer}`;
+    } else {
+      setHidden(elements.quizSection, true);
+      elements.quizQuestion.textContent = "";
+      elements.quizAnswer.textContent = "";
+    }
   }
 
   if (savedMatch) {
@@ -298,6 +346,16 @@ function currentReviewItem() {
   return state.review.items[state.review.index] || null;
 }
 
+function getPinyinHtml(item, fontSize = "11px") {
+  let pinyinText = item.pinyin || "";
+  const isChinese = /[\u4e00-\u9fa5]/.test(item.originalText);
+  if (isChinese && window.pinyinPro) {
+    pinyinText = window.pinyinPro.pinyin(item.originalText);
+  }
+  if (!pinyinText) return "";
+  return `<div class="pinyin-text" style="margin-top: 0; font-size: ${fontSize}; font-weight: 600; font-style: normal; color: var(--accent); letter-spacing: 0.04em; text-transform: lowercase;">${escapeHtml(pinyinText)}</div>`;
+}
+
 function renderSavedList() {
   const filtered = filterMemoryItems(state.savedItems, {
     query: state.filters.savedQuery,
@@ -308,7 +366,12 @@ function renderSavedList() {
   elements.savedCount.textContent = `${filtered.length} item${filtered.length === 1 ? "" : "s"}`;
 
   if (!filtered.length) {
-    elements.savedList.innerHTML = `<div class="soft-box"><h3>No saved items</h3><p class="empty-copy">Save useful results from the Result or History tabs.</p></div>`;
+    elements.savedList.innerHTML = `
+      <div style="text-align: center; margin-top: 24px; align-items: center;">
+        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
+        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">No saved items</h1>
+        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Save useful results from the Result or History tabs.</p>
+      </div>`;
     return;
   }
 
@@ -323,14 +386,23 @@ function renderSavedList() {
             <span class="meta-chip">${escapeHtml(formatRelativeDate(item.savedAt))}</span>
             ${item.tag ? `<span class="meta-chip">${escapeHtml(item.tag)}</span>` : ""}
           </div>
-          <strong>${escapeHtml(item.originalText)}</strong>
+          <div style="display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px 0;">
+            ${getPinyinHtml(item)}
+            <strong style="font-size: 16px; letter-spacing: 0.02em;">${escapeHtml(item.originalText)}</strong>
+          </div>
           <p>${escapeHtml(item.translatedText || item.explanation || "No preview available.")}</p>
           <div class="muted">${escapeHtml(item.pageTitle || item.pageDomain || "No source details")}</div>
           ${item.note ? `<div class="muted">Note: ${escapeHtml(item.note)}</div>` : ""}
-          <div class="action-row">
-            <button class="secondary-button" data-action="open-saved" data-id="${item.id}" type="button">Open</button>
-            <button class="secondary-button" data-action="review-saved" data-id="${item.id}" type="button">Review</button>
-            <button class="secondary-button" data-action="delete-saved" data-id="${item.id}" type="button">Delete</button>
+          <div class="action-icon-row">
+            <button class="action-icon-btn" data-action="review-saved" data-id="${item.id}" type="button" title="Review">
+              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-review"/></svg>
+            </button>
+            <button class="action-icon-btn" data-action="open-saved" data-id="${item.id}" type="button" title="Open">
+              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-open"/></svg>
+            </button>
+            <button class="action-icon-btn danger" data-action="delete-saved" data-id="${item.id}" type="button" title="Delete">
+              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-trash"/></svg>
+            </button>
           </div>
         </article>
       `
@@ -347,7 +419,12 @@ function renderHistoryList() {
   elements.historyCount.textContent = `${filtered.length} item${filtered.length === 1 ? "" : "s"}`;
 
   if (!filtered.length) {
-    elements.historyList.innerHTML = `<div class="soft-box"><h3>No recent lookups</h3><p class="empty-copy">History fills automatically after successful results.</p></div>`;
+    elements.historyList.innerHTML = `
+      <div style="text-align: center; margin-top: 24px; align-items: center;">
+        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
+        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">No recent lookups</h1>
+        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">History fills automatically after successful results.</p>
+      </div>`;
     return;
   }
 
@@ -360,13 +437,22 @@ function renderHistoryList() {
             <span class="meta-chip">${escapeHtml(formatLabel(item.itemType))}</span>
             <span class="meta-chip">${escapeHtml(formatRelativeDate(item.lookedUpAt))}</span>
           </div>
-          <strong>${escapeHtml(item.originalText)}</strong>
+          <div style="display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px 0;">
+            ${getPinyinHtml(item)}
+            <strong style="font-size: 16px; letter-spacing: 0.02em;">${escapeHtml(item.originalText)}</strong>
+          </div>
           <p>${escapeHtml(item.translatedText || item.explanation || "No preview available.")}</p>
           <div class="muted">${escapeHtml(item.pageTitle || item.pageDomain || "No source details")}</div>
-          <div class="action-row">
-            <button class="secondary-button" data-action="open-history" data-id="${item.id}" type="button">Open</button>
-            <button class="secondary-button" data-action="save-history" data-id="${item.id}" type="button">Save</button>
-            <button class="secondary-button" data-action="delete-history" data-id="${item.id}" type="button">Delete</button>
+          <div class="action-icon-row">
+            <button class="action-icon-btn" data-action="save-history" data-id="${item.id}" type="button" title="Save">
+              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-saved"/></svg>
+            </button>
+            <button class="action-icon-btn" data-action="open-history" data-id="${item.id}" type="button" title="Open">
+              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-open"/></svg>
+            </button>
+            <button class="action-icon-btn danger" data-action="delete-history" data-id="${item.id}" type="button" title="Delete">
+              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-trash"/></svg>
+            </button>
           </div>
         </article>
       `
@@ -378,14 +464,24 @@ function renderReviewState() {
   if (!state.savedItems.length) {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
-    elements.reviewEmpty.innerHTML = `<h3>Nothing to review yet</h3><p class="empty-copy">Save a few lookups first. Review uses your saved items only.</p>`;
+    elements.reviewEmpty.innerHTML = `
+      <div style="text-align: center; margin-top: 24px; align-items: center;">
+        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
+        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Nothing to review yet</h1>
+        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Save a few lookups first. Review uses your saved items only.</p>
+      </div>`;
     return;
   }
 
   if (!state.review.items.length) {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
-    elements.reviewEmpty.innerHTML = `<h3>Ready to review</h3><p class="empty-copy">Start a quick session with a few saved items.</p>`;
+    elements.reviewEmpty.innerHTML = `
+      <div style="text-align: center; margin-top: 24px; align-items: center;">
+        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
+        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Ready to review</h1>
+        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Start a quick session with a few saved items.</p>
+      </div>`;
     return;
   }
 
@@ -393,7 +489,12 @@ function renderReviewState() {
   if (!item) {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
-    elements.reviewEmpty.innerHTML = `<h3>Review complete</h3><p class="empty-copy">Run another short session whenever you want.</p>`;
+    elements.reviewEmpty.innerHTML = `
+      <div style="text-align: center; margin-top: 24px; align-items: center;">
+        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
+        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Review complete</h1>
+        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Run another short session whenever you want.</p>
+      </div>`;
     return;
   }
 
@@ -428,7 +529,8 @@ function renderReviewState() {
       </div>
       <div>
         <div class="section-title">Prompt</div>
-        <h3>${escapeHtml(item.originalText)}</h3>
+        ${getPinyinHtml(item, "12px")}
+        <h3 style="margin-top: 2px;">${escapeHtml(item.originalText)}</h3>
       </div>
       ${optionsMarkup}
       <div class="action-row">
@@ -507,8 +609,9 @@ function renderMap() {
       ${selectedItem.tag ? `<span class="meta-chip">${escapeHtml(selectedItem.tag)}</span>` : ""}
     </div>
     <div>
-      <div class="section-title">Original text</div>
-      <h3>${escapeHtml(selectedItem.originalText)}</h3>
+      <div class="section-title" style="margin-bottom: 4px;">Original text</div>
+      ${getPinyinHtml(selectedItem, "12px")}
+      <h3 style="margin-top: 2px;">${escapeHtml(selectedItem.originalText)}</h3>
     </div>
     <div>
       <div class="section-title">Translation</div>
@@ -818,9 +921,23 @@ function registerEvents() {
     button.addEventListener("click", () => setActiveTab(button.dataset.tab));
   });
 
-  elements.retryButton.addEventListener("click", () => runUnderstanding(state.pendingSelection || { text: state.currentLookup?.originalText || "" }));
+  if (elements.clearButton) {
+    elements.clearButton.addEventListener("click", () => {
+      clearPendingSelection();
+      renderIdle();
+    });
+  }
+
+  if (elements.retryButton) {
+    elements.retryButton.addEventListener("click", () => {
+      const textToRetry = state.pendingSelection?.text || state.currentLookup?.originalText;
+      if (textToRetry) {
+        runUnderstanding({ text: textToRetry, sourceUrl: state.pendingSelection?.sourceUrl || state.currentLookup?.pageUrl, sourceTitle: state.pendingSelection?.sourceTitle || state.currentLookup?.pageTitle });
+      }
+    });
+  }
+
   elements.errorRetry.addEventListener("click", () => runUnderstanding(state.pendingSelection || { text: state.currentLookup?.originalText || "" }));
-  elements.heroSettings.addEventListener("click", openSettings);
   elements.errorSettings.addEventListener("click", openSettings);
   elements.openSettings.addEventListener("click", openSettings);
   elements.saveButton.addEventListener("click", handleSaveCurrent);
@@ -853,6 +970,20 @@ function registerEvents() {
     state.filters.historyLanguage = event.target.value;
     renderHistoryList();
   });
+  elements.upsellButton.addEventListener("click", openSettings);
+  elements.listenBtn.addEventListener("click", () => {
+    if (state.currentLookup?.originalText) {
+      playAudio(state.currentLookup.originalText);
+    }
+  });
+
+  if (elements.clearHistoryButton) {
+    elements.clearHistoryButton.addEventListener("click", async () => {
+      // Optional: add confirmation logic here if desired
+      await clearHistoryItems();
+      await refreshMemory();
+    });
+  }
 }
 
 registerEvents();

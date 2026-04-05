@@ -11,6 +11,7 @@ function buildPrompt(text) {
       translation: "Bengali translation of the selected text",
       explanation: "Short contextual explanation in Bengali",
       pronunciation: "Pronunciation guidance in Bengali or simple phonetics",
+      pinyin: "Provide precise Mandarin Pinyin with tone marks (e.g. 'nǐ hǎo'), or null if the text is not Chinese.",
       quiz: {
         question: "Optional short recall question in Bengali",
         answer: "Optional short answer",
@@ -20,6 +21,7 @@ function buildPrompt(text) {
     "- Keep translation concise and natural.",
     "- Explanation should focus on meaning in context.",
     "- Pronunciation can be brief.",
+    "- If the selected text contains Chinese characters, provide standard Mandarin Pinyin with tone marks. Otherwise, set it strictly to null.",
     "- If quiz is not useful, return quiz as null.",
     `Selected text: ${text}`,
   ].join("\n");
@@ -61,15 +63,17 @@ function normalizeQuiz(quiz) {
   return { question, answer };
 }
 
-export function normalizeResult(parsed) {
+export function normalizeResult(parsed, isFallback = false) {
   const result = {
     translation: normalizeField(parsed.translation),
     explanation: normalizeField(parsed.explanation),
     pronunciation: normalizeField(parsed.pronunciation),
+    pinyin: normalizeField(parsed.pinyin, null),
     quiz: normalizeQuiz(parsed.quiz),
+    isFallback,
   };
 
-  if (!result.translation && !result.explanation && !result.pronunciation) {
+  if (!result.translation && !result.explanation && !result.pronunciation && !result.pinyin) {
     throw new Error("The response was empty");
   }
 
@@ -108,14 +112,31 @@ export async function understandText({ text, providerConfig }) {
   const provider = getProvider(providerConfig.provider);
   const apiKey = (providerConfig.apiKey || "").trim();
 
-  if (!apiKey) {
-    throw new Error("API key required");
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
+    if (!apiKey) {
+      // Hybrid Fallback Architecture: if NO key, use MyMemory free API
+      const fallbackUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=Autodetect|bn`;
+      const fallbackResponse = await fetch(fallbackUrl, { signal: controller.signal });
+      
+      if (!fallbackResponse.ok) {
+        throw new Error("Fallback translation service unavailable.");
+      }
+      
+      const fallbackData = await fallbackResponse.json();
+      const translation = fallbackData.responseData?.translatedText || "Could not translate text.";
+      
+      return normalizeResult({
+        translation: translation,
+        explanation: "Basic translation provided. 🔒 Add an API key for grammar context and examples.",
+        pronunciation: "",
+        pinyin: null,
+        quiz: null,
+      }, true);
+    }
+
     const response = await fetch(`${provider.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -151,7 +172,7 @@ export async function understandText({ text, providerConfig }) {
       throw new Error("The model returned an empty response");
     }
 
-    return normalizeResult(parseJsonPayload(content));
+    return normalizeResult(parseJsonPayload(content), false);
   } catch (error) {
     throw mapNetworkError(error);
   } finally {
