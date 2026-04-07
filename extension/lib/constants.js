@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   CURRENT_RESULT: "currentResult",
   SAVED_ITEMS: "savedItems",
   HISTORY_ITEMS: "historyItems",
+  NATIVE_LANGUAGE: "nativeLanguage",
 };
 
 export const DEFAULT_PROVIDER_CONFIG = {

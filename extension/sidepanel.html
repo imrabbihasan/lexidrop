@@ -215,7 +215,7 @@
       }
       .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.16); border-top-color: var(--accent); animation: spin 1s linear infinite; }
       .hidden { display: none !important; }
-      .section-title { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+      .section-title { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
       .pinyin-text {
         font-size: 14px;
         font-style: italic;
@@ -235,23 +235,34 @@
       }
       #listen-btn { filter: grayscale(1); opacity: 0.7; transition: all 0.2s; padding: 4px 8px; font-size: 14px; border: none; background: transparent; }
       #listen-btn:hover { filter: none; opacity: 1; }
-      .result-stack, .list-stack, .detail-stack, .review-stack, .map-stack { display: grid; gap: 14px; }
+      .result-stack, .list-stack, .detail-stack, .review-stack, .map-stack { display: grid; gap: 14px; text-align: left; }
       .translation {
         font-size: 28px;
         line-height: 1.18;
         letter-spacing: -0.05em;
         font-weight: 700;
         color: var(--text);
-        text-wrap: balance;
+        text-align: left;
       }
       .meta-line { display: flex; flex-wrap: wrap; gap: 8px; }
       .meta-chip {
-        padding: 6px 10px;
+        padding: 5px 12px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.045);
-        color: var(--muted);
+        background: rgba(255, 255, 255, 0.055);
+        color: var(--text-soft);
         font-size: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.04);
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        letter-spacing: 0.01em;
+      }
+      .source-section {
+        display: grid;
+        gap: 10px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin-top: 4px;
       }
       .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
       .filters { 
@@ -657,7 +668,7 @@
         </nav>
 
         <section data-panel="result" class="view-panel">
-          <div id="empty-state" class="hero" style="text-align: center; margin-top: 16px; align-items: center;">
+          <div id="empty-state" class="hero" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 16px;">
             <div class="empty-illustration" aria-hidden="true" style="margin-bottom: 12px;"></div>
             <h1 style="font-size: 20px; color: var(--text-soft); line-height: 1.35; margin-bottom: 0px;">
               <span class="text-long">Understand Chinese and English text without leaving the page.</span>
@@ -720,7 +731,7 @@
               </div>
 
               <div class="translation-wrap">
-                <div class="section-title">Bengali translation</div>
+                <div class="section-title" id="translation-label">Translation</div>
                 <div id="translation" class="translation"></div>
               </div>
 
@@ -744,7 +755,7 @@
                 </div>
               </div>
 
-              <div>
+              <div class="source-section">
                 <div class="section-title">Source</div>
                 <div id="source-meta" class="meta-line"></div>
               </div>

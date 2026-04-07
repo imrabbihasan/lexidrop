@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LexiDrop: Reading Assistant",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Highlight Chinese or English text and get Bengali translation, explanation, and pronunciation in a side panel.",
   "permissions": ["storage", "sidePanel", "contextMenus"],
   "host_permissions": [
@@ -26,5 +26,11 @@
     "48": "logo.png",
     "128": "logo.png"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["onboarding.html", "onboarding.js", "onboarding.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "author": "Hasan Rabbi"
 }

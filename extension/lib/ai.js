@@ -1,19 +1,47 @@
 import { REQUEST_TIMEOUT_MS } from "./constants.js";
 import { getProvider } from "./providers.js";
 
-function buildPrompt(text) {
+const LANGUAGE_CODES = {
+  English: "en",
+  Bengali: "bn",
+  Spanish: "es",
+  French: "fr",
+  Hindi: "hi",
+  German: "de",
+  Arabic: "ar",
+  Portuguese: "pt",
+  Japanese: "ja",
+  Korean: "ko",
+  Chinese: "zh",
+  Russian: "ru",
+  Turkish: "tr",
+  Italian: "it",
+  Dutch: "nl",
+  Polish: "pl",
+  Vietnamese: "vi",
+  Thai: "th",
+  Indonesian: "id",
+  Malay: "ms",
+  Urdu: "ur",
+};
+
+function getLangCode(nativeLanguage) {
+  return LANGUAGE_CODES[nativeLanguage] || "en";
+}
+
+function buildPrompt(text, nativeLanguage = "English") {
   return [
-    "You are LexiDrop, a browser reading assistant for Bengali speakers.",
+    `You are LexiDrop, a browser reading assistant for ${nativeLanguage} speakers.`,
     "Return valid JSON only.",
     "Do not wrap the JSON in markdown fences.",
     "Output schema:",
     JSON.stringify({
-      translation: "Bengali translation of the selected text",
-      explanation: "Short contextual explanation in Bengali",
-      pronunciation: "Pronunciation guidance in Bengali or simple phonetics",
+      translation: `${nativeLanguage} translation of the selected text`,
+      explanation: `Short contextual explanation in ${nativeLanguage}`,
+      pronunciation: `Pronunciation guidance in ${nativeLanguage} or simple phonetics`,
       pinyin: "Provide precise Mandarin Pinyin with tone marks (e.g. 'nǐ hǎo'), or null if the text is not Chinese.",
       quiz: {
-        question: "Optional short recall question in Bengali",
+        question: `Optional short recall question in ${nativeLanguage}`,
         answer: "Optional short answer",
       },
     }),
@@ -108,9 +136,10 @@ function mapNetworkError(error) {
   return error;
 }
 
-export async function understandText({ text, providerConfig }) {
+export async function understandText({ text, providerConfig, nativeLanguage = "English" }) {
   const provider = getProvider(providerConfig.provider);
   const apiKey = (providerConfig.apiKey || "").trim();
+  const langCode = getLangCode(nativeLanguage);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -118,7 +147,7 @@ export async function understandText({ text, providerConfig }) {
   try {
     if (!apiKey) {
       // Hybrid Fallback Architecture: if NO key, use MyMemory free API
-      const fallbackUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=Autodetect|bn`;
+      const fallbackUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=Autodetect|${langCode}`;
       const fallbackResponse = await fetch(fallbackUrl, { signal: controller.signal });
       
       if (!fallbackResponse.ok) {
@@ -130,7 +159,7 @@ export async function understandText({ text, providerConfig }) {
       
       return normalizeResult({
         translation: translation,
-        explanation: "Basic translation provided. 🔒 Add an API key for grammar context and examples.",
+        explanation: `Basic translation provided. 🔒 Add an API key for grammar context and examples.`,
         pronunciation: "",
         pinyin: null,
         quiz: null,
@@ -153,7 +182,7 @@ export async function understandText({ text, providerConfig }) {
           },
           {
             role: "user",
-            content: buildPrompt(text),
+            content: buildPrompt(text, nativeLanguage),
           },
         ],
       }),

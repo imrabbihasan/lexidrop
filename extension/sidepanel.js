@@ -24,6 +24,7 @@ import {
 } from "./lib/memory.js";
 import {
   clearPendingSelection,
+  getNativeLanguage,
   getPendingSelection,
   getProviderConfig,
 } from "./lib/storage.js";
@@ -89,6 +90,7 @@ const elements = {
   upsellBanner: document.getElementById("upsell-banner"),
   upsellButton: document.getElementById("upsell-button"),
   listenBtn: document.getElementById("listen-btn"),
+  translationLabel: document.getElementById("translation-label"),
 };
 
 const state = {
@@ -114,6 +116,7 @@ const state = {
     markedIds: new Set(),
   },
   mapSelectedId: null,
+  feedbackTimeoutId: null,
 };
 
 function setHidden(element, hidden) {
@@ -296,11 +299,17 @@ function renderResult(lookup) {
     elements.savedTag.value = savedMatch.tag || "";
     elements.savedNote.value = savedMatch.note || "";
     elements.saveButton.textContent = "Saved";
+    elements.saveButton.disabled = true;
+    elements.saveButton.style.opacity = "0.5";
+    elements.saveButton.style.cursor = "not-allowed";
   } else {
     setHidden(elements.savedEditor, true);
     elements.savedTag.value = "";
     elements.savedNote.value = "";
     elements.saveButton.textContent = "Save";
+    elements.saveButton.disabled = false;
+    elements.saveButton.style.opacity = "1";
+    elements.saveButton.style.cursor = "pointer";
   }
 }
 
@@ -367,7 +376,7 @@ function renderSavedList() {
 
   if (!filtered.length) {
     elements.savedList.innerHTML = `
-      <div style="text-align: center; margin-top: 24px; align-items: center;">
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
         <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
         <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">No saved items</h1>
         <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Save useful results from the Result or History tabs.</p>
@@ -420,7 +429,7 @@ function renderHistoryList() {
 
   if (!filtered.length) {
     elements.historyList.innerHTML = `
-      <div style="text-align: center; margin-top: 24px; align-items: center;">
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
         <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
         <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">No recent lookups</h1>
         <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">History fills automatically after successful results.</p>
@@ -465,7 +474,7 @@ function renderReviewState() {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
     elements.reviewEmpty.innerHTML = `
-      <div style="text-align: center; margin-top: 24px; align-items: center;">
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
         <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
         <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Nothing to review yet</h1>
         <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Save a few lookups first. Review uses your saved items only.</p>
@@ -477,7 +486,7 @@ function renderReviewState() {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
     elements.reviewEmpty.innerHTML = `
-      <div style="text-align: center; margin-top: 24px; align-items: center;">
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
         <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
         <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Ready to review</h1>
         <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Start a quick session with a few saved items.</p>
@@ -490,7 +499,7 @@ function renderReviewState() {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
     elements.reviewEmpty.innerHTML = `
-      <div style="text-align: center; margin-top: 24px; align-items: center;">
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
         <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
         <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Review complete</h1>
         <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Run another short session whenever you want.</p>
@@ -664,9 +673,17 @@ async function runUnderstanding(selection) {
 
   try {
     const providerConfig = await getProviderConfig();
+    const nativeLanguage = await getNativeLanguage();
+
+    // Keep translation label in sync with current language setting
+    if (elements.translationLabel) {
+      elements.translationLabel.textContent = `${nativeLanguage} Translation`;
+    }
+
     const result = await understandText({
       text: normalizedText,
       providerConfig,
+      nativeLanguage,
     });
 
     const lookup = buildLookupRecord({
@@ -685,12 +702,18 @@ async function runUnderstanding(selection) {
 }
 
 async function initializePanel() {
-  const [savedItems, historyItems, currentResult, pending] = await Promise.all([
+  const [savedItems, historyItems, currentResult, pending, nativeLanguage] = await Promise.all([
     getSavedItems(),
     getHistoryItems(),
     getCurrentResult(),
     getPendingSelection(),
+    getNativeLanguage(),
   ]);
+
+  // Update the translation section label to reflect the user's chosen language
+  if (elements.translationLabel) {
+    elements.translationLabel.textContent = `${nativeLanguage} Translation`;
+  }
 
   state.savedItems = savedItems;
   state.historyItems = historyItems;
@@ -729,6 +752,10 @@ async function handleSaveCurrent() {
   renderResult(savedItem);
   elements.saveFeedback.textContent = existing ? "Updated in Saved" : "Saved";
   setHidden(elements.saveFeedback, false);
+  if (state.feedbackTimeoutId) clearTimeout(state.feedbackTimeoutId);
+  state.feedbackTimeoutId = setTimeout(() => {
+    setHidden(elements.saveFeedback, true);
+  }, 2000);
 }
 
 async function handleUpdateSavedMeta() {
@@ -747,6 +774,10 @@ async function handleUpdateSavedMeta() {
   renderResult(updated);
   elements.metaFeedback.textContent = "Updated";
   setHidden(elements.metaFeedback, false);
+  if (state.feedbackTimeoutId) clearTimeout(state.feedbackTimeoutId);
+  state.feedbackTimeoutId = setTimeout(() => {
+    setHidden(elements.metaFeedback, true);
+  }, 2000);
 }
 
 async function openLookupInResult(item) {

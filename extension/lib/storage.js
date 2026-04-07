@@ -63,3 +63,12 @@ export async function getPendingSelection() {
 export async function clearPendingSelection() {
   await chrome.storage.session.remove(STORAGE_KEYS.PENDING_SELECTION);
 }
+
+export async function getNativeLanguage() {
+  const stored = await chrome.storage.sync.get(STORAGE_KEYS.NATIVE_LANGUAGE);
+  return stored[STORAGE_KEYS.NATIVE_LANGUAGE] || "English";
+}
+
+export async function setNativeLanguage(language) {
+  await chrome.storage.sync.set({ [STORAGE_KEYS.NATIVE_LANGUAGE]: language });
+}

@@ -140,8 +140,8 @@ export async function saveLookupItem(lookup, overrides = {}) {
   const now = Date.now();
 
   const nextItem = normalizeSavedItem({
-    ...lookup,
     ...existing,
+    ...lookup,
     ...overrides,
     id: existing?.id || uniqueId("saved"),
     savedAt: existing?.savedAt || now,

@@ -1,10 +1,11 @@
 import { getProviderEntries, getProvider } from "./lib/providers.js";
-import { getProviderConfig, saveProviderConfig } from "./lib/storage.js";
+import { getProviderConfig, getNativeLanguage, saveProviderConfig, setNativeLanguage } from "./lib/storage.js";
 
 const form = document.getElementById("settings-form");
 const providerSelect = document.getElementById("provider");
 const modelInput = document.getElementById("model");
 const apiKeyInput = document.getElementById("api-key");
+const langSelect = document.getElementById("options-language-select");
 const status = document.getElementById("status");
 
 function setStatus(message) {
@@ -33,10 +34,15 @@ function syncModelPlaceholder() {
 async function loadSettings() {
   renderProviderOptions();
 
-  const config = await getProviderConfig();
+  const [config, nativeLanguage] = await Promise.all([
+    getProviderConfig(),
+    getNativeLanguage(),
+  ]);
+
   providerSelect.value = config.provider;
   modelInput.value = config.model;
   apiKeyInput.value = config.apiKey;
+  if (langSelect) langSelect.value = nativeLanguage;
   syncModelPlaceholder();
   setStatus("Ready");
 }
@@ -62,7 +68,11 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
-  await saveProviderConfig(nextConfig);
+  const selectedLang = langSelect ? langSelect.value : "Bengali";
+  await Promise.all([
+    saveProviderConfig(nextConfig),
+    setNativeLanguage(selectedLang),
+  ]);
   setStatus("Saved");
 });
 
