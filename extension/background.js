@@ -17,8 +17,18 @@ async function createContextMenu() {
   });
 }
 
+/**
+ * Opens LexiDrop in the native Chrome Side Panel.
+ */
 async function openPanel(windowId) {
-  await chrome.sidePanel.open({ windowId });
+  if (typeof chrome.sidePanel !== "undefined" && typeof chrome.sidePanel.open === "function") {
+    try {
+      const targetWindowId = windowId || chrome.windows.WINDOW_ID_CURRENT;
+      await chrome.sidePanel.open({ windowId: targetWindowId });
+    } catch (error) {
+      console.warn("[LexiDrop] sidePanel.open threw error.", error);
+    }
+  }
 }
 
 async function queueSelection(selection) {
@@ -35,8 +45,16 @@ async function queueSelection(selection) {
   }
 }
 
-chrome.runtime.onInstalled.addListener(async (details) => {
+async function setupNativeBehavior() {
   await createContextMenu();
+  // Let Chrome natively handle toolbar icon clicks for the richest integration
+  if (typeof chrome.sidePanel !== "undefined" && chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  }
+}
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  await setupNativeBehavior();
 
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
     chrome.tabs.create({ url: chrome.runtime.getURL("onboarding.html") });
@@ -44,19 +62,17 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  await createContextMenu();
+  await setupNativeBehavior();
 });
 
 chrome.action.onClicked.addListener((tab) => {
-  if (!tab.windowId) return;
-
-  openPanel(tab.windowId).catch((error) => {
-    console.error("[LexiDrop] Failed to open side panel from toolbar:", error);
+  openPanel(tab?.windowId).catch((error) => {
+    console.error("[LexiDrop] Failed to open panel from toolbar:", error);
   });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId !== CONTEXT_MENU_ID || !info.selectionText || !tab?.windowId) {
+  if (info.menuItemId !== CONTEXT_MENU_ID || !info.selectionText) {
     return;
   }
 
@@ -65,20 +81,20 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
   const selection = {
     text,
-    pageTitle: tab.title || "",
-    pageUrl: tab.url || "",
+    pageTitle: tab?.title || "",
+    pageUrl: tab?.url || "",
     pageDomain: (() => {
       try {
-        return new URL(tab.url || "").hostname.replace(/^www\./, "");
+        return new URL(tab?.url || "").hostname.replace(/^www\./, "");
       } catch {
         return "";
       }
     })(),
   };
 
-  openPanel(tab.windowId)
+  openPanel(tab?.windowId)
     .then(() => queueSelection(selection))
     .catch((error) => {
-      console.error("[LexiDrop] Failed to open side panel:", error);
+      console.error("[LexiDrop] Failed to open panel:", error);
     });
 });

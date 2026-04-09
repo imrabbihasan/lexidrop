@@ -222,6 +222,78 @@
         color: var(--text-soft);
         margin-top: 6px;
       }
+      .pos-tag {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--accent);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border: 1px solid var(--accent-strong);
+        white-space: nowrap;
+        margin-bottom: 2px;
+        margin-left: 10px;
+      }
+      .example-box {
+        margin-top: 14px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .example-box::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--muted);
+      }
+      .example-label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        margin: 0 0 6px;
+        letter-spacing: 0.05em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .example-text {
+        font-size: 15px;
+        color: var(--text);
+        margin: 0 0 6px;
+        line-height: 1.5;
+        font-style: italic;
+      }
+      .example-subtext {
+        font-size: 13.5px;
+        color: var(--muted);
+        margin: 0;
+        line-height: 1.4;
+      }
+      .upsell-banner {
+        background: linear-gradient(145deg, rgba(139, 192, 255, 0.08), rgba(139, 192, 255, 0.02));
+        border: 1px solid rgba(139, 192, 255, 0.2);
+        padding: 16px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .upsell-text {
+        font-size: 14px;
+        color: var(--text);
+        font-weight: 500;
+      }
       .source-box,
       .soft-box,
       .list-card,
@@ -237,12 +309,19 @@
       #listen-btn:hover { filter: none; opacity: 1; }
       .result-stack, .list-stack, .detail-stack, .review-stack, .map-stack { display: grid; gap: 14px; text-align: left; }
       .translation {
-        font-size: 28px;
-        line-height: 1.18;
-        letter-spacing: -0.05em;
-        font-weight: 700;
+        font-size: 32px;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
+        font-weight: 600;
         color: var(--text);
         text-align: left;
+        font-family: "Noto Sans Bengali", "Microsoft YaHei", sans-serif;
+      }
+      .translation-wrap {
+        padding: 16px 18px;
+        border-radius: 14px;
+        background: var(--panel-soft);
+        border: 1px solid rgba(255, 255, 255, 0.05);
       }
       .meta-line { display: flex; flex-wrap: wrap; gap: 8px; }
       .meta-chip {
@@ -713,9 +792,9 @@
               <div id="result-status" class="meta-chip">Ready</div>
             </div>
 
-            <div id="upsell-banner" class="hidden" style="background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffeeba; display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
-              <strong style="font-size: 14px;">Unlock AI Grammar Guides & Quizzes!</strong>
-              <button id="upsell-button" class="primary-button" style="background-color: #8bc0ff; color: #07101b; font-size: 13px; padding: 6px 10px;" type="button">Add Free API Key</button>
+            <div id="upsell-banner" class="hidden upsell-banner">
+              <strong class="upsell-text">Unlock AI Grammar Guides & Quizzes!</strong>
+              <button id="upsell-button" class="primary-button" style="font-size: 13px; padding: 6px 14px;" type="button">Add Free API Key</button>
             </div>
 
             <div class="result-stack">
@@ -724,9 +803,12 @@
                   <div class="section-title" style="margin-bottom: 0;">Selected text</div>
                   <button id="listen-btn" class="ghost-button hidden" type="button" title="Listen to text">🔊</button>
                 </div>
-                <div class="source-box" style="display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-left: 3px solid var(--accent);">
-                  <div id="pinyin-display" class="pinyin-text hidden" style="margin-top: 0; font-size: 13px; font-weight: 600; font-style: normal; color: var(--accent); letter-spacing: 0.04em; text-transform: lowercase;"></div>
-                  <div id="source-text" style="font-size: 22px; font-weight: 400; line-height: 1.4; color: var(--text); font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;"></div>
+                <div class="source-box" style="display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 14px; border-left: 3px solid var(--accent);">
+                  <div id="pinyin-display" class="pinyin-text hidden" style="margin-top: 0; margin-bottom: 4px; font-size: 14px; font-weight: 600; font-style: normal; color: var(--accent); letter-spacing: 0.04em; text-transform: lowercase; min-height: 16px;"></div>
+                  <div style="display: flex; align-items: flex-end; flex-wrap: wrap;">
+                    <div id="source-text" style="font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--text); font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;"></div>
+                    <span id="pos-tag" class="pos-tag hidden"></span>
+                  </div>
                 </div>
               </div>
 
@@ -740,6 +822,11 @@
               <div class="result-feature">
                 <div class="section-title">Explanation</div>
                 <div id="explanation" class="detail-copy"></div>
+                <div id="example-container" class="example-box hidden">
+                  <p class="example-label">Example Phrase</p>
+                  <p id="example-original" class="example-text"></p>
+                  <p id="example-translation" class="example-subtext"></p>
+                </div>
               </div>
 
               <div class="result-feature">

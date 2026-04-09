@@ -38,6 +38,11 @@ function buildPrompt(text, nativeLanguage = "English") {
     JSON.stringify({
       translation: `${nativeLanguage} translation of the selected text`,
       explanation: `Short contextual explanation in ${nativeLanguage}`,
+      partOfSpeech: "Provide the part of speech, e.g., Noun, Verb, Adjective. If it acts as multiple, list them like 'Noun / Verb'",
+      exampleSentence: {
+        original: "Create a simple, practical example sentence using the word in the original language.",
+        translation: `Provide the sentence translation in ${nativeLanguage}.`
+      },
       pronunciation: `Pronunciation guidance in ${nativeLanguage} or simple phonetics`,
       pinyin: "Provide precise Mandarin Pinyin with tone marks (e.g. 'nǐ hǎo'), or null if the text is not Chinese.",
       quiz: {
@@ -92,9 +97,18 @@ function normalizeQuiz(quiz) {
 }
 
 export function normalizeResult(parsed, isFallback = false) {
+  let exampleSentence = null;
+  if (parsed.exampleSentence && typeof parsed.exampleSentence === "object") {
+    const original = normalizeField(parsed.exampleSentence.original);
+    const translation = normalizeField(parsed.exampleSentence.translation);
+    if (original && translation) exampleSentence = { original, translation };
+  }
+
   const result = {
     translation: normalizeField(parsed.translation),
     explanation: normalizeField(parsed.explanation),
+    partOfSpeech: normalizeField(parsed.partOfSpeech),
+    exampleSentence,
     pronunciation: normalizeField(parsed.pronunciation),
     pinyin: normalizeField(parsed.pinyin, null),
     quiz: normalizeQuiz(parsed.quiz),
@@ -160,6 +174,8 @@ export async function understandText({ text, providerConfig, nativeLanguage = "E
       return normalizeResult({
         translation: translation,
         explanation: `Basic translation provided. 🔒 Add an API key for grammar context and examples.`,
+        partOfSpeech: "",
+        exampleSentence: null,
         pronunciation: "",
         pinyin: null,
         quiz: null,

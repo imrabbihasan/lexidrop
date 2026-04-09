@@ -42,11 +42,11 @@ export async function saveProviderConfig(config) {
 
 export async function setPendingSelection(selection) {
   if (!selection?.text?.trim()) {
-    await chrome.storage.session.remove(STORAGE_KEYS.PENDING_SELECTION);
+    await chrome.storage.local.remove(STORAGE_KEYS.PENDING_SELECTION);
     return;
   }
 
-  await chrome.storage.session.set({
+  await chrome.storage.local.set({
     [STORAGE_KEYS.PENDING_SELECTION]: {
       ...selection,
       text: selection.text.trim(),
@@ -56,12 +56,12 @@ export async function setPendingSelection(selection) {
 }
 
 export async function getPendingSelection() {
-  const stored = await chrome.storage.session.get(STORAGE_KEYS.PENDING_SELECTION);
+  const stored = await chrome.storage.local.get(STORAGE_KEYS.PENDING_SELECTION);
   return stored[STORAGE_KEYS.PENDING_SELECTION] || null;
 }
 
 export async function clearPendingSelection() {
-  await chrome.storage.session.remove(STORAGE_KEYS.PENDING_SELECTION);
+  await chrome.storage.local.remove(STORAGE_KEYS.PENDING_SELECTION);
 }
 
 export async function getNativeLanguage() {

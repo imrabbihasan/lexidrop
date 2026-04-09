@@ -1,78 +1,53 @@
-# LexiDrop
+# LexiDrop 💧
 
-LexiDrop is a browser reading assistant for Bengali speakers.
+LexiDrop is a powerful, AI-driven browser reading assistant that transforms how you engage with foreign text online. 
 
-It helps users understand Chinese and English text instantly without leaving the page. The primary flow is:
+Instead of switching tabs to Google Translate, LexiDrop brings translations, grammatical breakdowns, smart quizzes, and native audio pronunciations directly to your current webpage natively through the browser's side panel.
 
-1. Highlight text on a webpage
-2. Trigger LexiDrop
-3. Open the side panel
-4. Read the translation, explanation, and pronunciation
+> **Note:** Arc Browser currently blocks native side panels. Full Arc support is coming soon! For now, Arc, Opera, and Brave users can use LexiDrop natively via the built-in "Floating Window" fallback mode in the Extension Settings.
 
-Vocabulary saving and quiz features support that flow. They are secondary, not the product identity.
+## The Core Loop
 
-## Current Product Direction
+1. **Highlight** any word or phrase on a webpage.
+2. **Right-click** and select *"Save to LexiDrop"*.
+3. Wait a few milliseconds, and everything you need appears neatly beside the page:
+   - Beautiful localized translation into your native language.
+   - Real-world grammar explanation and context.
+   - Pinyin (for Chinese characters) via an entirely offline engine.
+   - Premium localized Native Neural Text-to-Speech (TTS).
 
-LexiDrop should be positioned as:
+## Features & Philosophy
 
-- an in-browser reading comprehension tool
-- a translation and explanation assistant
-- a lightweight study companion
+LexiDrop is **not** a generic translator. It is designed as an interactive reading companion.
 
-LexiDrop is not being positioned as:
+- **Global Language Support:** By default, it translates into Bengali, but seamlessly supports 20 globally spoken base languages (English, Spanish, French, Hindi, Japanese, etc.) dynamically during onboarding.
+- **Offline Pinyin:** Instant tone marks and precise Pinyin resolution via the local, fast `pinyin-pro`.
+- **Smart Quizzes:** Generates dynamic, AI-assisted quizzes to test retention based on your recent searches.
+- **Cost-Free Fallbacks:** Completely free to use with MyMemory fallback translations for the simplest tasks.
 
-- a generic translator
-- a physics dashboard
-- a vocabulary board product
+## Privacy & Security First (BYOK)
+LexiDrop is 100% free and private. It runs entirely inside your browser (Manifest V3 compatible).
 
-## Repository Structure
+To power the AI explanation engines, you bring your own **free API key** (BYOK) from providers like:
+- **OpenRouter**
+- **DeepSeek**
+- **Groq**
 
-- [extension](/Users/imrabbihasan/Documents/Web-Projects/lexidrop/extension): browser extension shell, side panel, options page
-- [landing](/Users/imrabbihasan/Documents/Web-Projects/lexidrop/landing): marketing site
-- [client](/Users/imrabbihasan/Documents/Web-Projects/lexidrop/client): embedded React app currently rendered inside the extension side panel
-- [server](/Users/imrabbihasan/Documents/Web-Projects/lexidrop/server): local Express + Prisma API used by the current client
-
-## Architecture Status
-
-The repository still contains legacy product direction from an older vocabulary-tracker concept:
-
-- a physics-based vocabulary dashboard in `client`
-- a localhost API and SQLite persistence in `server`
-- copy that still refers to vocabulary boards and whiteboards
-
-These parts are functional but no longer represent the clearest launch direction.
-
-Recommended direction:
-
-- keep the browser extension side panel as the main product surface
-- keep translation, explanation, and pronunciation first
-- demote save and quiz actions
-- treat the physics dashboard as legacy until it is either removed or intentionally reintroduced
+Your keys are saved securely and locally to `chrome.storage.sync` and are never broadcast to a central server.
 
 ## Installation
 
-Install from Microsoft Edge Add-ons:
+You can load this unpacked extension natively in any Chromium-based browser (Chrome, Edge, Brave, etc.)
 
-[LexiDrop on Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/lexidrop-ai-vocabulary-t/kkidkhomhljchjdhbbggjjchhnnipnji)
+1. Clone or download the repository.
+2. Go to `chrome://extensions/` (or `edge://extensions/`).
+3. Enable **Developer mode**.
+4. Click **Load unpacked** and select the `/extension` directory.
 
-## Provider Configuration
+*(Available soon on Chrome Web Store and Microsoft Edge Add-ons)*
 
-LexiDrop currently uses a BYOK setup.
+## Architecture
 
-Users should configure:
+LexiDrop was historically a Node.js/React project, but has been completely re-architected strictly as a lightweight **Vanilla JS Manifest V3 Browser Extension** to adhere to modern strict Content Security Policies (CSP).
 
-- provider
-- model
-- API key
-
-The current codebase still has inconsistent naming in a few places from older Gemini-specific logic. That is being refactored toward provider-neutral configuration.
-
-## Launch Focus
-
-Before launch, prioritize:
-
-1. consistent product messaging
-2. side-panel-first UX
-3. clear provider/model settings
-4. reduced legacy architecture confusion
-5. reliable error and loading states
+Everything—from state management to the AI prompting, the onboarding slide wizard, and local offline API mapping—is contained efficiently and performantly within the `/extension` directory.

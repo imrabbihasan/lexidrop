@@ -58,6 +58,10 @@ const elements = {
   sourceMeta: document.getElementById("source-meta"),
   quizSection: document.getElementById("quiz-section"),
   quizQuestion: document.getElementById("quiz-question"),
+  posTag: document.getElementById("pos-tag"),
+  exampleContainer: document.getElementById("example-container"),
+  exampleOriginal: document.getElementById("example-original"),
+  exampleTranslation: document.getElementById("example-translation"),
   quizAnswer: document.getElementById("quiz-answer"),
   saveButton: document.getElementById("save-button"),
   saveFeedback: document.getElementById("save-feedback"),
@@ -157,6 +161,9 @@ function playAudio(text) {
   const utterance = new SpeechSynthesisUtterance(text);
   const isChinese = /[\u4e00-\u9fa5]/.test(text);
   utterance.lang = isChinese ? 'zh-CN' : 'en-US';
+  
+  // Slow down the pronunciation for better clarity and beginner comprehension
+  utterance.rate = isChinese ? 0.75 : 0.85;
 
   const voices = window.speechSynthesis.getVoices();
   if (voices.length > 0) {
@@ -258,9 +265,24 @@ function renderResult(lookup) {
 
   elements.resultStatus.textContent = savedMatch ? formatLabel(savedMatch.progressStage) : "Ready";
   elements.sourceText.textContent = lookup.originalText;
-  elements.translation.textContent = lookup.translatedText || "No translation returned.";
+  elements.translation.textContent = lookup.translatedText || lookup.translation || "No translation returned.";
   elements.explanation.textContent = lookup.explanation || "No explanation returned.";
   elements.pronunciation.textContent = lookup.pronunciation || "No pronunciation returned.";
+
+  if (lookup.partOfSpeech) {
+    elements.posTag.textContent = lookup.partOfSpeech;
+    setHidden(elements.posTag, false);
+  } else {
+    setHidden(elements.posTag, true);
+  }
+
+  if (lookup.exampleSentence) {
+    elements.exampleOriginal.textContent = lookup.exampleSentence.original;
+    elements.exampleTranslation.textContent = lookup.exampleSentence.translation;
+    setHidden(elements.exampleContainer, false);
+  } else {
+    setHidden(elements.exampleContainer, true);
+  }
   
   const isChinese = /[\u4e00-\u9fa5]/.test(lookup.originalText);
   if (isChinese && window.pinyinPro) {
@@ -336,6 +358,9 @@ async function persistCurrentResult(lookup) {
           result: {
             translation: lookup.translatedText,
             explanation: lookup.explanation,
+            partOfSpeech: lookup.partOfSpeech,
+            exampleSentence: lookup.exampleSentence,
+            pinyin: lookup.pinyin,
             pronunciation: lookup.pronunciation,
             quiz: lookup.quiz,
           },
