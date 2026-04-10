@@ -31,32 +31,25 @@ function getLangCode(nativeLanguage) {
 
 function buildPrompt(text, nativeLanguage = "English") {
   return [
-    `You are LexiDrop, a browser reading assistant for ${nativeLanguage} speakers.`,
-    "Return valid JSON only.",
-    "Do not wrap the JSON in markdown fences.",
-    "Output schema:",
+    `You are LexiDrop. Respond ONLY with valid JSON. Target language: ${nativeLanguage}`,
+    "Schema:",
     JSON.stringify({
-      translation: `${nativeLanguage} translation of the selected text`,
-      explanation: `Short contextual explanation in ${nativeLanguage}`,
-      partOfSpeech: "Provide the part of speech, e.g., Noun, Verb, Adjective. If it acts as multiple, list them like 'Noun / Verb'",
+      translation: `Concise ${nativeLanguage} translation`,
+      explanation: `Short context in ${nativeLanguage}`,
+      partOfSpeech: "Noun/Verb/etc.",
       exampleSentence: {
-        original: "Create a simple, practical example sentence using the word in the original language.",
-        translation: `Provide the sentence translation in ${nativeLanguage}.`
+        original: "Short original sentence",
+        translation: `${nativeLanguage} translation`
       },
-      pronunciation: `Pronunciation guidance in ${nativeLanguage} or simple phonetics`,
-      pinyin: "Provide precise Mandarin Pinyin with tone marks (e.g. 'nǐ hǎo'), or null if the text is not Chinese.",
+      pronunciation: "Short phonetic guide",
+      pinyin: "Standard Pinyin with tone marks ONLY if Chinese, else null",
       quiz: {
-        question: `Optional short recall question in ${nativeLanguage}`,
-        answer: "Optional short answer",
-      },
+        question: `Short recall question in ${nativeLanguage}`,
+        answer: "Short answer"
+      }
     }),
-    "Rules:",
-    "- Keep translation concise and natural.",
-    "- Explanation should focus on meaning in context.",
-    "- Pronunciation can be brief.",
-    "- If the selected text contains Chinese characters, provide standard Mandarin Pinyin with tone marks. Otherwise, set it strictly to null.",
-    "- If quiz is not useful, return quiz as null.",
-    `Selected text: ${text}`,
+    "Rules: Be concise. Return JSON without markdown fences. Set pinyin to null for non-Chinese text.",
+    `Selected text: ${text}`
   ].join("\n");
 }
 

@@ -14,7 +14,7 @@ export const STORAGE_KEYS = {
 
 export const DEFAULT_PROVIDER_CONFIG = {
   provider: "openrouter",
-  model: "moonshotai/kimi-k2-instruct-0905",
+  model: "google/gemini-2.0-flash-001",
   apiKey: "",
 };
 

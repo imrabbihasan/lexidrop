@@ -11,204 +11,67 @@
   </head>
   <body>
     <div class="ob-shell">
-      <!-- Background orbs -->
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
       <div class="orb orb-3"></div>
 
-      <div class="ob-card">
-
-        <!-- Slide 1 -->
-        <div class="slide active" id="slide-1">
-          <div class="slide-visual">
-            <div class="icon-ring">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 20h4l10.5-10.5a2.828 2.828 0 1 0-4-4L4 16v4z"/>
-                <path d="m14.5 5.5 4 4"/>
-              </svg>
-            </div>
-            <div class="cursor-demo">
-              <div class="demo-text">
-                <span class="highlight-word">Highlight</span>
-                <span> any word</span>
-              </div>
-              <div class="demo-cursor"></div>
-            </div>
+      <div class="wizard-card">
+        <div class="wizard-header">
+          <div class="logo-wrap">
+            <img src="logo.png" alt="LexiDrop Logo" style="width: 34px; height: 34px; object-fit: contain;" />
           </div>
-
-          <div class="slide-badge">Step 1 of 3</div>
-          <h1 class="slide-title">Welcome to LexiDrop 💧</h1>
-          <p class="slide-body">
-            Your AI reading assistant. To translate any text, simply
-            <strong>highlight it</strong>, right-click, and select
-            <strong>"Save to LexiDrop"</strong> from the menu.
-          </p>
-
-          <div class="step-visual-hints">
-            <div class="step-hint">
-              <div class="step-num">1</div>
-              <span>Select any word or phrase on a webpage</span>
-            </div>
-            <div class="step-hint">
-              <div class="step-num">2</div>
-              <span>Right-click and choose <em>"Save to LexiDrop"</em></span>
-            </div>
-            <div class="step-hint">
-              <div class="step-num">3</div>
-              <span>See the translation in the side panel instantly</span>
-            </div>
-          </div>
-
-          <div class="lang-select-wrap">
-            <label class="lang-label" for="language-select">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-              Translate into
-            </label>
-            <select id="language-select" class="lang-select">
-              <option value="Bengali">Bengali (বাংলা)</option>
-              <option value="English">English</option>
-              <option value="Spanish">Spanish (Español)</option>
-              <option value="French">French (Français)</option>
-              <option value="Hindi">Hindi (हिन्दी)</option>
-              <option value="German">German (Deutsch)</option>
-              <option value="Arabic">Arabic (العربية)</option>
-              <option value="Portuguese">Portuguese (Português)</option>
-              <option value="Japanese">Japanese (日本語)</option>
-              <option value="Korean">Korean (한국어)</option>
-              <option value="Chinese">Chinese (中文)</option>
-              <option value="Russian">Russian (Русский)</option>
-              <option value="Turkish">Turkish (Türkçe)</option>
-              <option value="Italian">Italian (Italiano)</option>
-              <option value="Dutch">Dutch (Nederlands)</option>
-              <option value="Polish">Polish (Polski)</option>
-              <option value="Vietnamese">Vietnamese (Tiếng Việt)</option>
-              <option value="Thai">Thai (ภาษาไทย)</option>
-              <option value="Indonesian">Indonesian (Bahasa Indonesia)</option>
-              <option value="Malay">Malay (Bahasa Melayu)</option>
-              <option value="Urdu">Urdu (اردو)</option>
-            </select>
-          </div>
-
-          <div class="slide-actions">
-            <button class="ob-btn-primary" id="slide-1-next">Next: See the Magic →</button>
-          </div>
+          <h1 class="wizard-title">Welcome to LexiDrop</h1>
+          <p class="wizard-subtitle">We need a free Connection Code to securely power LexiDrop's ultra-fast AI. It takes 10 seconds.</p>
         </div>
 
-        <!-- Slide 2 -->
-        <div class="slide" id="slide-2">
-          <div class="slide-badge">Step 2 of 3</div>
-          <h1 class="slide-title">More Than Just a Dictionary</h1>
-          <p class="slide-body">
-            LexiDrop doesn't just translate. It enriches your reading experience with four powerful tools built right in.
-          </p>
-
-          <div class="feature-grid">
-            <div class="feature-card">
-              <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                </svg>
-              </div>
-              <strong>Native Audio</strong>
-              <span>Hear the correct pronunciation with premium neural voices</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                </svg>
-              </div>
-              <strong>Grammar Context</strong>
-              <span>Understand words in their natural linguistic context</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon pinyin-icon">
-                <span>拼</span>
-              </div>
-              <strong>Chinese Pinyin</strong>
-              <span>Instant offline tone marks for every Chinese character</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
-                  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
-                  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/>
-                  <path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/>
-                  <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/>
-                  <path d="M3.477 10.896a4 4 0 0 1 .585-.396"/>
-                  <path d="M19.938 10.5a4 4 0 0 1 .585.396"/>
-                  <path d="M6 18a4 4 0 0 1-1.967-.516"/>
-                  <path d="M19.967 17.484A4 4 0 0 1 18 18"/>
-                </svg>
-              </div>
-              <strong>Smart Quizzes</strong>
-              <span>AI-generated questions that help you actually remember</span>
+        <div class="wizard-steps">
+          
+          <div class="wizard-step">
+            <div class="step-badge">1</div>
+            <div class="step-content">
+              <h3>Create a Free Account</h3>
+              <p>We use OpenRouter to access free, fast models directly.</p>
+              <a href="https://openrouter.ai/login" target="_blank" class="step-btn">Sign in to OpenRouter (Free) ↗</a>
             </div>
           </div>
 
-          <div class="slide-actions">
-            <button class="ob-btn-ghost" id="slide-2-back">← Back</button>
-            <button class="ob-btn-primary" id="slide-2-next">Next: Final Step →</button>
+          <div class="wizard-step">
+            <div class="step-badge">2</div>
+            <div class="step-content">
+              <h3>Generate Code</h3>
+              <p>Create a secure key so LexiDrop can translate text for you.</p>
+              <a href="https://openrouter.ai/settings/keys" target="_blank" class="step-btn">Create your Connection Code ↗</a>
+            </div>
           </div>
+
+          <div class="wizard-step">
+            <div class="step-badge">3</div>
+            <div class="step-content">
+              <h3>Connect</h3>
+              <p>Paste your new Connection Code below to activate LexiDrop.</p>
+              <div class="input-row">
+                <input type="password" id="connection-code" placeholder="sk-or-v1-..." autocomplete="off" />
+                <button id="start-learning-btn" class="primary-btn">Start Learning</button>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Slide 3 -->
-        <div class="slide" id="slide-3">
-          <div class="slide-visual">
-            <div class="key-icon-wrap">
-              <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="7.5" cy="15.5" r="5.5"/>
-                <path d="m21 2-9.6 9.6"/>
-                <path d="m15.5 7.5 3 3L22 7l-3-3"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="slide-badge free-badge">100% Free & Private</div>
-          <h1 class="slide-title">You Hold the Key.</h1>
-          <p class="slide-body">
-            LexiDrop runs entirely in your browser — no monthly subscription ever.
-            To power the AI, simply connect a <strong>free API key</strong> from OpenRouter or DeepSeek.
-          </p>
-
-          <div class="provider-row">
-            <div class="provider-card">
-              <div class="provider-dot" style="background: #10b981;"></div>
-              <div>
-                <strong>OpenRouter</strong>
-                <span>Free tier available · Multiple models</span>
-              </div>
-            </div>
-            <div class="provider-card">
-              <div class="provider-dot" style="background: #6366f1;"></div>
-              <div>
-                <strong>DeepSeek</strong>
-                <span>Very affordable · Chinese-specialized</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="slide-actions column">
-            <button class="ob-btn-primary" id="open-settings-btn">Open Settings to Add Key →</button>
-            <button class="ob-btn-ghost" id="skip-btn">I'll do this later</button>
-          </div>
+        <div class="privacy-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span><strong>Why this?</strong> By using a direct connection, LexiDrop stays 100% free forever. We never see, store, or sell your reading data.</span>
         </div>
-
       </div>
+    </div>
 
-      <!-- Progress dots -->
-      <div class="ob-dots">
-        <button class="dot active" id="dot-0" aria-label="Go to slide 1"></button>
-        <button class="dot" id="dot-1" aria-label="Go to slide 2"></button>
-        <button class="dot" id="dot-2" aria-label="Go to slide 3"></button>
+    <!-- Success Overlay -->
+    <div id="success-overlay" class="hidden">
+      <div class="success-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
+      <h2>Connected Successfully!</h2>
+      <p>LexiDrop is ready. You can close this tab.</p>
     </div>
 
     <script src="onboarding.js"></script>

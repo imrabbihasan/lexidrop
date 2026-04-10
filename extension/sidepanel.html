@@ -774,12 +774,17 @@
             </div>
           </section>
 
-          <section id="error-state" class="panel hidden">
-            <h2>Something went wrong</h2>
-            <p id="error-message" class="error-copy">Could not parse the response.</p>
-            <div class="action-row" style="margin-top: 12px;">
-              <button id="error-retry" class="primary-button" type="button">Try again</button>
-              <button id="error-settings" class="secondary-button" type="button">Open settings</button>
+          <section id="error-state" class="hidden" style="display: flex; flex-direction: column; justify-content: center; align-items: center; margin-top: 32px; padding: 0 16px;">
+            <div class="soft-box" style="border: 1px solid rgba(255, 92, 92, 0.4); background: rgba(255, 92, 92, 0.08); width: 100%; border-radius: 16px; padding: 24px; text-align: center;">
+              <div style="font-size: 36px; margin-bottom: 12px; opacity: 0.9;">🛑</div>
+              <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Something went wrong</h2>
+              <div style="background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: left; overflow-x: auto; max-width: 100%; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <p id="error-message" style="color: var(--error, #ff8a8a); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; margin: 0; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap;"></p>
+              </div>
+              <div style="display: flex; gap: 12px; width: 100%;">
+                <button id="error-retry" class="primary-button" style="flex: 1; padding: 12px;" type="button">Try again</button>
+                <button id="error-settings" class="secondary-button" style="flex: 1; padding: 12px;" type="button">Settings</button>
+              </div>
             </div>
           </section>
 
