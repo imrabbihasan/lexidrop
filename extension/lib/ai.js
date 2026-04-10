@@ -38,8 +38,8 @@ function buildPrompt(text, nativeLanguage = "English") {
       explanation: `Short context in ${nativeLanguage}`,
       partOfSpeech: "Noun/Verb/etc.",
       exampleSentence: {
-        original: "Short original sentence",
-        translation: `${nativeLanguage} translation`
+        original: "A practical sentence written strictly in the EXACT SAME language as the selected text",
+        translation: `Translation of the sentence in ${nativeLanguage}`
       },
       pronunciation: "Short phonetic guide",
       pinyin: "Standard Pinyin with tone marks ONLY if Chinese, else null",

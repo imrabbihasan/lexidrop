@@ -828,7 +828,11 @@
                 <div class="section-title">Explanation</div>
                 <div id="explanation" class="detail-copy"></div>
                 <div id="example-container" class="example-box hidden">
-                  <p class="example-label">Example Phrase</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <p class="example-label" style="margin: 0;">Example Phrase</p>
+                    <button id="listen-example-btn" class="ghost-button hidden" type="button" title="Listen to example" style="padding: 2px 6px; font-size: 13px; opacity: 0.8;">🔊</button>
+                  </div>
+                  <div id="example-pinyin" class="pinyin-text hidden" style="margin-top: 0; margin-bottom: 2px; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;"></div>
                   <p id="example-original" class="example-text"></p>
                   <p id="example-translation" class="example-subtext"></p>
                 </div>

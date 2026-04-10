@@ -62,6 +62,8 @@ const elements = {
   exampleContainer: document.getElementById("example-container"),
   exampleOriginal: document.getElementById("example-original"),
   exampleTranslation: document.getElementById("example-translation"),
+  listenExampleBtn: document.getElementById("listen-example-btn"),
+  examplePinyin: document.getElementById("example-pinyin"),
   quizAnswer: document.getElementById("quiz-answer"),
   saveButton: document.getElementById("save-button"),
   saveFeedback: document.getElementById("save-feedback"),
@@ -158,11 +160,25 @@ function escapeHtml(value) {
 function playAudio(text) {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  const isChinese = /[\u4e00-\u9fa5]/.test(text);
-  utterance.lang = isChinese ? 'zh-CN' : 'en-US';
   
-  // Slow down the pronunciation for better clarity and beginner comprehension
+  const isChinese = /[\u4e00-\u9fa5]/.test(text);
+
+  if (isChinese) {
+    executeVoice(text, 'zh-CN', true);
+  } else {
+    chrome.i18n.detectLanguage(text, (result) => {
+      let langCode = 'en-US';
+      if (result && result.languages && result.languages.length > 0) {
+        langCode = result.languages[0].language;
+      }
+      executeVoice(text, langCode, false);
+    });
+  }
+}
+
+function executeVoice(text, langCode, isChinese) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = isChinese ? 'zh-CN' : langCode;
   utterance.rate = isChinese ? 0.75 : 0.85;
 
   const voices = window.speechSynthesis.getVoices();
@@ -171,11 +187,14 @@ function playAudio(text) {
     if (isChinese) {
       voice = voices.find(v => (v.name.includes('Xiaoxiao') || v.name.includes('Natural')) && v.lang.includes('zh'));
       if (!voice) voice = voices.find(v => v.name.includes('Google 普通话'));
-      if (!voice) voice = voices.find(v => v.lang === 'zh-CN');
+      if (!voice) voice = voices.find(v => v.lang.includes('zh'));
     } else {
-      voice = voices.find(v => v.name.includes('Natural') && (v.lang.includes('en-US') || v.lang.includes('en-GB')));
-      if (!voice) voice = voices.find(v => v.name.includes('Google US English'));
-      if (!voice) voice = voices.find(v => v.lang === 'en-US');
+      const shortLang = langCode.split('-')[0];
+      voice = voices.find(v => v.name.includes('Natural') && v.lang.startsWith(shortLang));
+      if (!voice) voice = voices.find(v => v.name.includes('Google') && v.lang.startsWith(shortLang));
+      if (!voice) voice = voices.find(v => v.lang.startsWith(shortLang));
+      
+      if (!voice) voice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
     }
 
     if (voice) {
@@ -279,9 +298,23 @@ function renderResult(lookup) {
   if (lookup.exampleSentence) {
     elements.exampleOriginal.textContent = lookup.exampleSentence.original;
     elements.exampleTranslation.textContent = lookup.exampleSentence.translation;
+    
+    setHidden(elements.listenExampleBtn, false);
+    
+    const isExampleChinese = /[\u4e00-\u9fa5]/.test(lookup.exampleSentence.original);
+    if (isExampleChinese && window.pinyinPro) {
+      const examplePinyinText = window.pinyinPro.pinyin(lookup.exampleSentence.original);
+      elements.examplePinyin.textContent = examplePinyinText;
+      setHidden(elements.examplePinyin, false);
+    } else {
+      setHidden(elements.examplePinyin, true);
+    }
+    
     setHidden(elements.exampleContainer, false);
   } else {
     setHidden(elements.exampleContainer, true);
+    setHidden(elements.listenExampleBtn, true);
+    setHidden(elements.examplePinyin, true);
   }
   
   const isChinese = /[\u4e00-\u9fa5]/.test(lookup.originalText);
@@ -1030,6 +1063,12 @@ function registerEvents() {
   elements.listenBtn.addEventListener("click", () => {
     if (state.currentLookup?.originalText) {
       playAudio(state.currentLookup.originalText);
+    }
+  });
+
+  elements.listenExampleBtn.addEventListener("click", () => {
+    if (state.currentLookup?.exampleSentence?.original) {
+      playAudio(state.currentLookup.exampleSentence.original);
     }
   });
 
