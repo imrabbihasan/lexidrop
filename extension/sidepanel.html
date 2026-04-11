@@ -1,983 +1,1266 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LexiDrop</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg: #06080c;
-        --bg-elevated: rgba(11, 15, 22, 0.92);
-        --panel: rgba(14, 18, 27, 0.9);
-        --panel-soft: rgba(255, 255, 255, 0.03);
-        --panel-strong: rgba(255, 255, 255, 0.055);
-        --border: rgba(168, 182, 204, 0.12);
-        --border-strong: rgba(168, 182, 204, 0.18);
-        --text: #f4f7fb;
-        --text-soft: #dce5f1;
-        --muted: #95a3b8;
-        --accent: #8bc0ff;
-        --accent-soft: rgba(139, 192, 255, 0.12);
-        --accent-strong: rgba(139, 192, 255, 0.2);
-        --error: #f2a6a6;
-        --success: #9ee1be;
-        --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
-        --radius-panel: 24px;
-        --radius-soft: 18px;
-        font-family: "Inter", "Segoe UI", sans-serif;
-      }
 
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background:
-          radial-gradient(circle at top, rgba(139, 192, 255, 0.11), transparent 28%),
-          linear-gradient(180deg, #090c12 0%, #05070b 100%);
-        color: var(--text);
-      }
-      button, input, select, textarea { font: inherit; }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexiDrop</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06080c;
+      --bg-elevated: rgba(11, 15, 22, 0.92);
+      --panel: rgba(14, 18, 27, 0.9);
+      --panel-soft: rgba(255, 255, 255, 0.03);
+      --panel-strong: rgba(255, 255, 255, 0.055);
+      --border: rgba(168, 182, 204, 0.12);
+      --border-strong: rgba(168, 182, 204, 0.18);
+      --text: #f4f7fb;
+      --text-soft: #dce5f1;
+      --muted: #95a3b8;
+      --accent: #8bc0ff;
+      --accent-soft: rgba(139, 192, 255, 0.12);
+      --accent-strong: rgba(139, 192, 255, 0.2);
+      --error: #f2a6a6;
+      --success: #9ee1be;
+      --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+      --radius-panel: 24px;
+      --radius-soft: 18px;
+      font-family: "Inter", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(139, 192, 255, 0.11), transparent 28%),
+        linear-gradient(180deg, #090c12 0%, #05070b 100%);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .frame {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topbar,
+    .tabbar,
+    .hero,
+    .card,
+    .panel {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand span,
+    .muted,
+    .meta,
+    .empty-copy,
+    .field-help {
+      color: var(--muted);
+    }
+
+    .ghost-button,
+    .primary-button,
+    .secondary-button,
+    .tab-button,
+    .chip-button,
+    .choice-button {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .ghost-button,
+    .tab-button,
+    .chip-button,
+    .secondary-button,
+    .choice-button {
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .ghost-button,
+    .secondary-button,
+    .primary-button,
+    .chip-button,
+    .tab-button,
+    .choice-button {
+      padding: 10px 12px;
+      border-radius: 13px;
+      transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
+    }
+
+    .ghost-button,
+    .tab-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-soft);
+    }
+
+    .ghost-button svg,
+    .tab-button svg {
+      flex-shrink: 0;
+    }
+
+    .ghost-button:hover,
+    .secondary-button:hover,
+    .choice-button:hover,
+    .tab-button:hover {
+      background: var(--panel-strong);
+      border-color: var(--border-strong);
+    }
+
+    .primary-button {
+      background: #91c5ff;
+      color: #07101b;
+      font-weight: 700;
+      box-shadow: 0 0 0 1px rgba(145, 197, 255, 0.1), 0 10px 24px rgba(64, 121, 186, 0.18);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .tabbar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 6px;
+      padding: 6px;
+    }
+
+    .text-short {
+      display: none;
+    }
+
+    .text-long {
+      display: block;
+    }
+
+    .tab-button {
+      min-height: 40px;
+      background: transparent;
+      border-color: transparent;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .tab-button.active {
+      background: var(--accent-soft);
+      color: var(--text);
+      border-color: var(--accent-strong);
+      box-shadow: inset 0 0 0 1px rgba(139, 192, 255, 0.05);
+    }
+
+    .hero,
+    .card,
+    .panel {
+      padding: 18px;
+    }
+
+    #empty-state,
+    #error-state {
+      display: grid;
+      gap: 12px;
+    }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 25px;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      max-width: 15ch;
+    }
+
+    .action-row,
+    .result-actions,
+    .filters,
+    .split-actions,
+    .map-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .status-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border-top-color: var(--accent);
+      animation: spin 1s linear infinite;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .section-title {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .pinyin-text {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--text-soft);
+      margin-top: 6px;
+    }
+
+    .pos-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--accent-strong);
+      white-space: nowrap;
+      margin-bottom: 2px;
+      margin-left: 10px;
+    }
+
+    .example-box {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .example-box::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--muted);
+    }
+
+    .example-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin: 0 0 6px;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .example-text {
+      font-size: 15px;
+      color: var(--text);
+      margin: 0 0 6px;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .example-subtext {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .upsell-banner {
+      background: linear-gradient(145deg, rgba(139, 192, 255, 0.08), rgba(139, 192, 255, 0.02));
+      border: 1px solid rgba(139, 192, 255, 0.2);
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .upsell-text {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .source-box,
+    .soft-box,
+    .list-card,
+    .review-card,
+    .map-shell,
+    .map-detail {
+      padding: 14px;
+      border-radius: var(--radius-soft);
+      background: var(--panel-soft);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    #listen-btn {
+      filter: grayscale(1);
+      opacity: 0.7;
+      transition: all 0.2s;
+      padding: 4px 8px;
+      font-size: 14px;
+      border: none;
+      background: transparent;
+    }
+
+    #listen-btn:hover {
+      filter: none;
+      opacity: 1;
+    }
+
+    .result-stack,
+    .list-stack,
+    .detail-stack,
+    .review-stack,
+    .map-stack {
+      display: grid;
+      gap: 14px;
+      text-align: left;
+    }
+
+    .translation {
+      font-size: 32px;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      font-weight: 600;
+      color: var(--text);
+      text-align: left;
+      font-family: "Noto Sans Bengali", "Microsoft YaHei", sans-serif;
+    }
+
+    .translation-wrap {
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: var(--panel-soft);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .meta-chip {
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      letter-spacing: 0.01em;
+    }
+
+    .source-section {
+      display: grid;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      margin-top: 4px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .filter-input {
+      grid-column: 1 / -1;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .list-card {
+      display: grid;
+      gap: 10px;
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+
+    .list-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(168, 182, 204, 0.16);
+    }
+
+    .list-card strong {
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      color: var(--text-highlight, #fff);
+    }
+
+    .list-card p {
+      color: var(--text-soft);
+      line-height: 1.45;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .action-icon-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 4px;
+      margin-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 10px;
+    }
+
+    .action-icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 6px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .action-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .action-icon-btn.danger:hover {
+      color: var(--error);
+    }
+
+    .list-card .muted {
+      font-size: 13px;
+    }
+
+    .detail-editor {
+      display: grid;
+      gap: 10px;
+    }
+
+    .split-actions {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .count-badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .review-card h3,
+    .map-detail h3 {
+      font-size: 18px;
+      line-height: 1.35;
+      letter-spacing: -0.03em;
+    }
+
+    .choice-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .choice-button {
+      text-align: left;
+    }
+
+    .choice-button.correct {
+      border-color: rgba(158, 225, 190, 0.5);
+      background: rgba(158, 225, 190, 0.12);
+    }
+
+    .choice-button.incorrect {
+      border-color: rgba(242, 166, 166, 0.45);
+      background: rgba(242, 166, 166, 0.12);
+    }
+
+    .success-note {
+      color: var(--success);
+      font-size: 13px;
+    }
+
+    .error-copy {
+      color: var(--error);
+    }
+
+    .map-shell {
+      padding: 10px;
+    }
+
+    .map-canvas {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at top, rgba(139, 192, 255, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(10, 13, 20, 0.96) 0%, rgba(7, 10, 16, 0.98) 100%);
+    }
+
+    .map-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .map-detail {
+      display: grid;
+      gap: 12px;
+    }
+
+    .map-empty {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stage-new {
+      color: #9aa6ba;
+    }
+
+    .stage-reviewed {
+      color: #84bdf9;
+    }
+
+    .stage-strong {
+      color: #a7e7c1;
+    }
+
+    .stage-mastered {
+      color: #f1d38b;
+    }
+
+    .result-feature {
+      display: grid;
+      gap: 8px;
+      padding: 2px 0 0;
+    }
+
+    .translation-wrap {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(139, 192, 255, 0.07), rgba(139, 192, 255, 0.02)),
+        rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(139, 192, 255, 0.12);
+    }
+
+    .detail-copy {
+      color: var(--text-soft);
+      line-height: 1.62;
+    }
+
+    .pronunciation-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-soft);
+    }
+
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0));
+    }
+
+    .loading-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .loading-card {
+      padding: 16px;
+      border-radius: 20px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .skeleton {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .skeleton::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+      animation: shimmer 1.6s ease-in-out infinite;
+    }
+
+    .skeleton-line {
+      height: 12px;
+      border-radius: 999px;
+    }
+
+    .skeleton-line.large {
+      height: 28px;
+      border-radius: 14px;
+    }
+
+    .skeleton-line.medium {
+      width: 72%;
+    }
+
+    .skeleton-line.short {
+      width: 42%;
+    }
+
+    .empty-illustration {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 35% 35%, rgba(139, 192, 255, 0.18), transparent 55%),
+        rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(139, 192, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .empty-illustration::before {
+      content: "";
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #91c5ff;
+      box-shadow: 0 0 0 8px rgba(145, 197, 255, 0.08);
+    }
+
+    @media (max-width: 520px) {
       .shell {
-        min-height: 100vh;
-        padding: 16px;
-      }
-
-      .frame {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
+        padding: 12px;
       }
 
       .topbar,
-      .tabbar,
       .hero,
       .card,
       .panel {
-        background: var(--bg-elevated);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-panel);
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(18px);
+        padding: 14px;
+        border-radius: 18px;
       }
+
+      .topbar,
+      .panel-header,
+      .split-actions {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
       .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 14px 16px;
-      }
-      .brand { display: flex; align-items: center; gap: 12px; }
-      .brand img {
-        width: 30px;
-        height: 30px;
-        border-radius: 10px;
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+        gap: 10px;
       }
 
-      .brand strong {
-        display: block;
-        font-size: 14px;
-        letter-spacing: -0.02em;
-      }
-
-      .brand span, .muted, .meta, .empty-copy, .field-help {
-        color: var(--muted);
-      }
-      .ghost-button, .primary-button, .secondary-button, .tab-button, .chip-button, .choice-button {
-        appearance: none; border: 0; cursor: pointer;
-      }
-      .ghost-button,
-      .tab-button,
-      .chip-button,
-      .secondary-button,
-      .choice-button {
-        background: var(--panel-soft);
-        color: var(--text);
-        border: 1px solid var(--border);
-      }
-      .ghost-button,
-      .secondary-button,
-      .primary-button,
-      .chip-button,
-      .tab-button,
-      .choice-button {
-        padding: 10px 12px;
-        border-radius: 13px;
-        transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
-      }
-      .ghost-button,
-      .tab-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        color: var(--text-soft);
-      }
-      .ghost-button svg,
-      .tab-button svg {
-        flex-shrink: 0;
-      }
-
-      .ghost-button:hover,
-      .secondary-button:hover,
-      .choice-button:hover,
-      .tab-button:hover {
-        background: var(--panel-strong);
-        border-color: var(--border-strong);
-      }
-
-      .primary-button {
-        background: #91c5ff;
-        color: #07101b;
-        font-weight: 700;
-        box-shadow: 0 0 0 1px rgba(145, 197, 255, 0.1), 0 10px 24px rgba(64, 121, 186, 0.18);
-      }
-
-      .primary-button:hover {
-        transform: translateY(-1px);
+      .topbar>.ghost-button,
+      .panel-header>.count-badge,
+      .panel-header>.primary-button,
+      .split-actions>.count-badge,
+      .split-actions>.secondary-button {
+        width: 100%;
       }
 
       .tabbar {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: nowrap;
-        gap: 6px;
-        padding: 6px;
-      }
-      .text-short {
-        display: none;
-      }
-      .text-long {
-        display: block;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .tab-button {
-        min-height: 40px;
-        background: transparent;
-        border-color: transparent;
-        color: var(--muted);
-        font-weight: 600;
+        min-height: 42px;
+        padding: 10px 8px;
+        font-size: 12px;
       }
 
-      .tab-button.active {
-        background: var(--accent-soft);
-        color: var(--text);
-        border-color: var(--accent-strong);
-        box-shadow: inset 0 0 0 1px rgba(139, 192, 255, 0.05);
-      }
-
-      .hero,
-      .card,
-      .panel {
-        padding: 18px;
-      }
-
-      #empty-state,
-      #error-state {
-        display: grid;
-        gap: 12px;
-      }
-
-      .hero {
-        display: flex;
+      .filters,
+      .action-row,
+      .result-actions,
+      .map-actions {
         flex-direction: column;
-        gap: 12px;
       }
 
-      .eyebrow {
-        width: fit-content;
-        padding: 7px 10px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+      .filter-input,
+      .filter-select,
+      .action-row>*,
+      .result-actions>*,
+      .map-actions>*,
+      .detail-editor>*,
+      .hero .action-row>* {
+        width: 100%;
       }
-      h1, h2, h3, p { margin: 0; }
-      h1 {
-        font-size: 25px;
-        line-height: 1.08;
-        letter-spacing: -0.04em;
-        max-width: 15ch;
-      }
-      .action-row, .result-actions, .filters, .split-actions, .map-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-      .status-inline {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-      .spinner { width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.16); border-top-color: var(--accent); animation: spin 1s linear infinite; }
-      .hidden { display: none !important; }
-      .section-title { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
-      .pinyin-text {
-        font-size: 14px;
-        font-style: italic;
-        color: var(--text-soft);
-        margin-top: 6px;
-      }
-      .pos-tag {
-        font-size: 11px;
-        padding: 3px 8px;
-        border-radius: 999px;
-        background: transparent;
-        color: var(--accent);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        border: 1px solid var(--accent-strong);
-        white-space: nowrap;
-        margin-bottom: 2px;
-        margin-left: 10px;
-      }
-      .example-box {
-        margin-top: 14px;
-        padding: 14px 16px;
-        background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
-        border-radius: 14px;
-        border: 1px solid var(--border);
-        position: relative;
-        overflow: hidden;
-      }
-      .example-box::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--muted);
-      }
-      .example-label {
-        font-size: 11px;
-        color: var(--muted);
-        font-weight: 600;
-        text-transform: uppercase;
-        margin: 0 0 6px;
-        letter-spacing: 0.05em;
-        display: flex;
-        align-items: center;
+
+      .meta-line {
         gap: 6px;
       }
-      .example-text {
-        font-size: 15px;
-        color: var(--text);
-        margin: 0 0 6px;
-        line-height: 1.5;
-        font-style: italic;
+
+      .translation {
+        font-size: 24px;
       }
-      .example-subtext {
-        font-size: 13.5px;
-        color: var(--muted);
-        margin: 0;
-        line-height: 1.4;
-      }
-      .upsell-banner {
-        background: linear-gradient(145deg, rgba(139, 192, 255, 0.08), rgba(139, 192, 255, 0.02));
-        border: 1px solid rgba(139, 192, 255, 0.2);
-        padding: 16px;
-        border-radius: 16px;
-        margin-bottom: 20px;
-        display: flex;
+
+      .map-caption {
         flex-direction: column;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .text-long {
+        display: none;
+      }
+
+      .text-short {
+        display: block;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .nav-text {
+        display: none;
+      }
+
+      .tab-button,
+      .ghost-button {
+        padding: 8px;
+        /* Reduce padding to perfectly center the icon */
+      }
+    }
+
+    @media (max-width: 380px) {
+      .shell {
+        padding: 10px;
+      }
+
+      .tabbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .brand {
         align-items: flex-start;
-        gap: 12px;
       }
-      .upsell-text {
-        font-size: 14px;
-        color: var(--text);
-        font-weight: 500;
+
+      .brand img {
+        width: 26px;
+        height: 26px;
       }
+
       .source-box,
       .soft-box,
       .list-card,
       .review-card,
       .map-shell,
       .map-detail {
-        padding: 14px;
-        border-radius: var(--radius-soft);
-        background: var(--panel-soft);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 12px;
       }
-      #listen-btn { filter: grayscale(1); opacity: 0.7; transition: all 0.2s; padding: 4px 8px; font-size: 14px; border: none; background: transparent; }
-      #listen-btn:hover { filter: none; opacity: 1; }
-      .result-stack, .list-stack, .detail-stack, .review-stack, .map-stack { display: grid; gap: 14px; text-align: left; }
-      .translation {
-        font-size: 32px;
-        line-height: 1.25;
-        letter-spacing: -0.02em;
-        font-weight: 600;
-        color: var(--text);
-        text-align: left;
-        font-family: "Noto Sans Bengali", "Microsoft YaHei", sans-serif;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
-      .translation-wrap {
-        padding: 16px 18px;
-        border-radius: 14px;
-        background: var(--panel-soft);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    @keyframes shimmer {
+      100% {
+        transform: translateX(100%);
       }
-      .meta-line { display: flex; flex-wrap: wrap; gap: 8px; }
-      .meta-chip {
-        padding: 5px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.055);
-        color: var(--text-soft);
-        font-size: 12px;
-        font-weight: 500;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        letter-spacing: 0.01em;
-      }
-      .source-section {
-        display: grid;
-        gap: 10px;
-        padding: 14px 16px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.025);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        margin-top: 4px;
-      }
-      .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-      .filters { 
-        display: grid; 
-        grid-template-columns: 1fr 1fr; 
-        gap: 8px; 
-        margin-bottom: 16px; 
-      }
-      .filter-input { grid-column: 1 / -1; }
-      input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text); }
-      textarea { min-height: 88px; resize: vertical; }
-      .list-card {
-        display: grid;
-        gap: 10px;
-        transition: background-color 140ms ease, border-color 140ms ease;
-      }
+    }
+  </style>
+</head>
 
-      .list-card:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(168, 182, 204, 0.16);
-      }
-
-      .list-card strong {
-        font-size: 17px;
-        line-height: 1.3;
-        letter-spacing: -0.01em;
-        color: var(--text-highlight, #fff);
-      }
-
-      .list-card p {
-        color: var(--text-soft);
-        line-height: 1.45;
-        font-size: 14px;
-        margin: 0;
-      }
-
-      .action-icon-row {
-        display: flex;
-        justify-content: flex-end;
-        gap: 4px;
-        margin-top: 8px;
-        border-top: 1px solid rgba(255,255,255,0.05);
-        padding-top: 10px;
-      }
-      
-      .action-icon-btn {
-        background: transparent;
-        border: none;
-        color: var(--muted);
-        padding: 6px;
-        border-radius: 6px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-      }
-      .action-icon-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: var(--text);
-      }
-      .action-icon-btn.danger:hover {
-        color: var(--error);
-      }
-
-      .list-card .muted {
-        font-size: 13px;
-      }
-      .detail-editor { display: grid; gap: 10px; }
-      .split-actions { justify-content: space-between; align-items: center; }
-      .count-badge { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); color: var(--muted); font-size: 12px; }
-      .review-card h3,
-      .map-detail h3 {
-        font-size: 18px;
-        line-height: 1.35;
-        letter-spacing: -0.03em;
-      }
-      .choice-list { display: grid; gap: 10px; }
-      .choice-button { text-align: left; }
-      .choice-button.correct { border-color: rgba(158, 225, 190, 0.5); background: rgba(158, 225, 190, 0.12); }
-      .choice-button.incorrect { border-color: rgba(242, 166, 166, 0.45); background: rgba(242, 166, 166, 0.12); }
-      .success-note { color: var(--success); font-size: 13px; }
-      .error-copy { color: var(--error); }
-      .map-shell {
-        padding: 10px;
-      }
-
-      .map-canvas {
-        width: 100%;
-        display: block;
-        border-radius: 16px;
-        background:
-          radial-gradient(circle at top, rgba(139, 192, 255, 0.08), transparent 34%),
-          linear-gradient(180deg, rgba(10, 13, 20, 0.96) 0%, rgba(7, 10, 16, 0.98) 100%);
-      }
-
-      .map-caption {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        margin-top: 10px;
-        color: var(--muted);
-        font-size: 12px;
-      }
-      .map-detail { display: grid; gap: 12px; }
-      .map-empty { display: grid; gap: 10px; }
-      .stage-new { color: #9aa6ba; }
-      .stage-reviewed { color: #84bdf9; }
-      .stage-strong { color: #a7e7c1; }
-      .stage-mastered { color: #f1d38b; }
-
-      .result-feature {
-        display: grid;
-        gap: 8px;
-        padding: 2px 0 0;
-      }
-
-      .translation-wrap {
-        display: grid;
-        gap: 12px;
-        padding: 16px;
-        border-radius: 20px;
-        background:
-          linear-gradient(180deg, rgba(139, 192, 255, 0.07), rgba(139, 192, 255, 0.02)),
-          rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(139, 192, 255, 0.12);
-      }
-
-      .detail-copy {
-        color: var(--text-soft);
-        line-height: 1.62;
-      }
-
-      .pronunciation-line {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        width: fit-content;
-        padding: 8px 10px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--text-soft);
-      }
-
-      .section-divider {
-        height: 1px;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0));
-      }
-
-      .loading-shell {
-        display: grid;
-        gap: 14px;
-      }
-
-      .loading-card {
-        padding: 16px;
-        border-radius: 20px;
-        background: var(--bg-elevated);
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow);
-      }
-
-      .skeleton {
-        position: relative;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      .skeleton::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        transform: translateX(-100%);
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-        animation: shimmer 1.6s ease-in-out infinite;
-      }
-
-      .skeleton-line {
-        height: 12px;
-        border-radius: 999px;
-      }
-
-      .skeleton-line.large {
-        height: 28px;
-        border-radius: 14px;
-      }
-
-      .skeleton-line.medium {
-        width: 72%;
-      }
-
-      .skeleton-line.short {
-        width: 42%;
-      }
-
-      .empty-illustration {
-        width: 52px;
-        height: 52px;
-        border-radius: 18px;
-        display: grid;
-        place-items: center;
-        background:
-          radial-gradient(circle at 35% 35%, rgba(139, 192, 255, 0.18), transparent 55%),
-          rgba(255, 255, 255, 0.025);
-        border: 1px solid rgba(139, 192, 255, 0.12);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-      }
-
-      .empty-illustration::before {
-        content: "";
-        width: 18px;
-        height: 18px;
-        border-radius: 999px;
-        background: #91c5ff;
-        box-shadow: 0 0 0 8px rgba(145, 197, 255, 0.08);
-      }
-
-      @media (max-width: 520px) {
-        .shell {
-          padding: 12px;
-        }
-
-        .topbar,
-        .hero,
-        .card,
-        .panel {
-          padding: 14px;
-          border-radius: 18px;
-        }
-
-        .topbar,
-        .panel-header,
-        .split-actions {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-
-        .topbar {
-          gap: 10px;
-        }
-
-        .topbar > .ghost-button,
-        .panel-header > .count-badge,
-        .panel-header > .primary-button,
-        .split-actions > .count-badge,
-        .split-actions > .secondary-button {
-          width: 100%;
-        }
-
-        .tabbar {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .tab-button {
-          min-height: 42px;
-          padding: 10px 8px;
-          font-size: 12px;
-        }
-
-        .filters,
-        .action-row,
-        .result-actions,
-        .map-actions {
-          flex-direction: column;
-        }
-
-        .filter-input,
-        .filter-select,
-        .action-row > *,
-        .result-actions > *,
-        .map-actions > *,
-        .detail-editor > *,
-        .hero .action-row > * {
-          width: 100%;
-        }
-
-        .meta-line {
-          gap: 6px;
-        }
-
-        .translation {
-          font-size: 24px;
-        }
-
-        .map-caption {
-          flex-direction: column;
-        }
-      }
-
-      @media (max-width: 450px) {
-        .text-long {
-          display: none;
-        }
-        .text-short {
-          display: block;
-        }
-      }
-
-      @media (max-width: 420px) {
-        .nav-text {
-          display: none;
-        }
-        .tab-button, .ghost-button {
-          padding: 8px; /* Reduce padding to perfectly center the icon */
-        }
-      }
-
-      @media (max-width: 380px) {
-        .shell {
-          padding: 10px;
-        }
-
-        .tabbar {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        h1 {
-          font-size: 22px;
-        }
-
-        .brand {
-          align-items: flex-start;
-        }
-
-        .brand img {
-          width: 26px;
-          height: 26px;
-        }
-
-        .source-box,
-        .soft-box,
-        .list-card,
-        .review-card,
-        .map-shell,
-        .map-detail {
-          padding: 12px;
-        }
-      }
-
-      @keyframes spin { to { transform: rotate(360deg); } }
-      @keyframes shimmer {
-        100% {
-          transform: translateX(100%);
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <svg style="display: none;">
-      <defs>
-        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
-        </symbol>
-        <symbol id="icon-result" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-        </symbol>
-        <symbol id="icon-saved" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
-        </symbol>
-        <symbol id="icon-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
-        </symbol>
-        <symbol id="icon-review" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-        </symbol>
-        <symbol id="icon-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>
-        </symbol>
-        <symbol id="icon-retry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-          <path d="M21 3v5h-5"/>
-        </symbol>
-        <symbol id="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-        </symbol>
-        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
-        </symbol>
-      </defs>
-    </svg>
-    <main class="shell">
-      <div class="frame">
-        <header class="topbar">
-          <div class="brand">
-            <img src="logo.png" alt="LexiDrop logo" />
-            <div>
-              <strong>LexiDrop</strong>
-              <span class="muted">Reading assistant</span>
-            </div>
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="icon-result" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4" />
+        <path d="M19 17v4" />
+        <path d="M3 5h4" />
+        <path d="M17 19h4" />
+      </symbol>
+      <symbol id="icon-saved" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+      </symbol>
+      <symbol id="icon-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M12 7v5l4 2" />
+      </symbol>
+      <symbol id="icon-review" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="m9 11 3 3L22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </symbol>
+      <symbol id="icon-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="16" y="16" width="6" height="6" rx="1" />
+        <rect x="2" y="16" width="6" height="6" rx="1" />
+        <rect x="9" y="2" width="6" height="6" rx="1" />
+        <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" />
+        <path d="M12 12V8" />
+      </symbol>
+      <symbol id="icon-retry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+      </symbol>
+      <symbol id="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      </symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18" />
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+        <line x1="10" x2="10" y1="11" y2="17" />
+        <line x1="14" x2="14" y1="11" y2="17" />
+      </symbol>
+    </defs>
+  </svg>
+  <main class="shell">
+    <div class="frame">
+      <header class="topbar">
+        <div class="brand">
+          <img src="logo.png" alt="LexiDrop logo" />
+          <div>
+            <strong>LexiDrop</strong>
+            <span class="muted">AI Language Assistant & Translator</span>
           </div>
-          <div style="display: flex; gap: 4px;">
-            <button id="retry-button" class="ghost-button" type="button" title="Retry Translation"><svg width="20" height="20"><use href="#icon-retry"/></svg><span class="nav-text">Retry</span></button>
-            <button id="clear-button" class="ghost-button" type="button" title="Clear Panel"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><span class="nav-text">Clear</span></button>
-            <button id="open-settings" class="ghost-button" type="button" title="Settings"><svg width="20" height="20"><use href="#icon-settings"/></svg><span class="nav-text">Settings</span></button>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <button id="open-settings" class="ghost-button" type="button" title="Settings"><svg width="20" height="20">
+              <use href="#icon-settings" />
+            </svg><span class="nav-text">Settings</span></button>
+          <button id="retry-button" class="ghost-button" type="button" title="Retry Translation"><svg width="20"
+              height="20">
+              <use href="#icon-retry" />
+            </svg><span class="nav-text">Retry</span></button>
+          <button id="clear-button" class="ghost-button" type="button" title="Clear Panel"><svg width="20" height="20"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg><span class="nav-text">Clear</span></button>
+        </div>
+      </header>
+
+      <nav class="tabbar">
+        <button class="tab-button active" data-tab="result" type="button" title="Result"><svg width="20" height="20">
+            <use href="#icon-result" />
+          </svg><span class="nav-text">Result</span></button>
+        <button class="tab-button" data-tab="saved" type="button" title="Saved"><svg width="20" height="20">
+            <use href="#icon-saved" />
+          </svg><span class="nav-text">Saved</span></button>
+        <button class="tab-button" data-tab="history" type="button" title="History"><svg width="20" height="20">
+            <use href="#icon-history" />
+          </svg><span class="nav-text">History</span></button>
+        <button class="tab-button" data-tab="review" type="button" title="Review"><svg width="20" height="20">
+            <use href="#icon-review" />
+          </svg><span class="nav-text">Review</span></button>
+        <button class="tab-button" data-tab="map" type="button" title="Map"><svg width="20" height="20">
+            <use href="#icon-map" />
+          </svg><span class="nav-text">Map</span></button>
+      </nav>
+
+      <section data-panel="result" class="view-panel">
+        <div id="empty-state" class="hero"
+          style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 16px;">
+          <div class="empty-illustration" aria-hidden="true" style="margin-bottom: 12px;"></div>
+          <h1 style="font-size: 20px; color: var(--text-soft); line-height: 1.35; margin-bottom: 0px;">
+            <span class="text-long">Understand Chinese and English text without leaving the page.</span>
+            <span class="text-short">Understand text instantly.</span>
+          </h1>
+          <p class="muted" style="font-size: 14px; max-width: 250px;">
+            Highlight text on a webpage and right-click 'Save to LexiDrop' to begin.
+          </p>
+        </div>
+
+        <section id="loading-indicator" class="loading-shell hidden" aria-live="polite">
+          <div class="status-inline">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Understanding text...</span>
           </div>
-        </header>
-
-        <nav class="tabbar">
-          <button class="tab-button active" data-tab="result" type="button" title="Result"><svg width="20" height="20"><use href="#icon-result"/></svg><span class="nav-text">Result</span></button>
-          <button class="tab-button" data-tab="saved" type="button" title="Saved"><svg width="20" height="20"><use href="#icon-saved"/></svg><span class="nav-text">Saved</span></button>
-          <button class="tab-button" data-tab="history" type="button" title="History"><svg width="20" height="20"><use href="#icon-history"/></svg><span class="nav-text">History</span></button>
-          <button class="tab-button" data-tab="review" type="button" title="Review"><svg width="20" height="20"><use href="#icon-review"/></svg><span class="nav-text">Review</span></button>
-          <button class="tab-button" data-tab="map" type="button" title="Map"><svg width="20" height="20"><use href="#icon-map"/></svg><span class="nav-text">Map</span></button>
-        </nav>
-
-        <section data-panel="result" class="view-panel">
-          <div id="empty-state" class="hero" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 16px;">
-            <div class="empty-illustration" aria-hidden="true" style="margin-bottom: 12px;"></div>
-            <h1 style="font-size: 20px; color: var(--text-soft); line-height: 1.35; margin-bottom: 0px;">
-              <span class="text-long">Understand Chinese and English text without leaving the page.</span>
-              <span class="text-short">Understand text instantly.</span>
-            </h1>
-            <p class="muted" style="font-size: 14px; max-width: 250px;">
-              Highlight text on a webpage and right-click 'Save to LexiDrop' to begin.
-            </p>
-          </div>
-
-          <section id="loading-indicator" class="loading-shell hidden" aria-live="polite">
-            <div class="status-inline">
-              <span class="spinner" aria-hidden="true"></span>
-              <span>Understanding text...</span>
-            </div>
-            <div class="loading-card">
-              <div class="result-stack">
-                <div class="skeleton skeleton-line short"></div>
-                <div class="skeleton skeleton-line large"></div>
-                <div class="skeleton skeleton-line medium"></div>
-                <div class="skeleton skeleton-line"></div>
-                <div class="skeleton skeleton-line medium"></div>
-              </div>
-            </div>
-          </section>
-
-          <section id="error-state" class="hidden" style="display: flex; flex-direction: column; justify-content: center; align-items: center; margin-top: 32px; padding: 0 16px;">
-            <div class="soft-box" style="border: 1px solid rgba(255, 92, 92, 0.4); background: rgba(255, 92, 92, 0.08); width: 100%; border-radius: 16px; padding: 24px; text-align: center;">
-              <div style="font-size: 36px; margin-bottom: 12px; opacity: 0.9;">🛑</div>
-              <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Something went wrong</h2>
-              <div style="background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: left; overflow-x: auto; max-width: 100%; border: 1px solid rgba(255, 255, 255, 0.05);">
-                <p id="error-message" style="color: var(--error, #ff8a8a); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; margin: 0; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap;"></p>
-              </div>
-              <div style="display: flex; gap: 12px; width: 100%;">
-                <button id="error-retry" class="primary-button" style="flex: 1; padding: 12px;" type="button">Try again</button>
-                <button id="error-settings" class="secondary-button" style="flex: 1; padding: 12px;" type="button">Settings</button>
-              </div>
-            </div>
-          </section>
-
-          <div id="active-state" class="card hidden">
-            <div class="panel-header">
-              <div>
-                <h2>Understanding</h2>
-                <p class="muted">Translation first, then context and pronunciation.</p>
-              </div>
-              <div id="result-status" class="meta-chip">Ready</div>
-            </div>
-
-            <div id="upsell-banner" class="hidden upsell-banner">
-              <strong class="upsell-text">Unlock AI Grammar Guides & Quizzes!</strong>
-              <button id="upsell-button" class="primary-button" style="font-size: 13px; padding: 6px 14px;" type="button">Add Free API Key</button>
-            </div>
-
+          <div class="loading-card">
             <div class="result-stack">
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <div class="section-title" style="margin-bottom: 0;">Selected text</div>
-                  <button id="listen-btn" class="ghost-button hidden" type="button" title="Listen to text">🔊</button>
+              <div class="skeleton skeleton-line short"></div>
+              <div class="skeleton skeleton-line large"></div>
+              <div class="skeleton skeleton-line medium"></div>
+              <div class="skeleton skeleton-line"></div>
+              <div class="skeleton skeleton-line medium"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="error-state" class="hidden"
+          style="display: flex; flex-direction: column; justify-content: center; align-items: center; margin-top: 32px; padding: 0 16px;">
+          <div class="soft-box"
+            style="border: 1px solid rgba(255, 92, 92, 0.4); background: rgba(255, 92, 92, 0.08); width: 100%; border-radius: 16px; padding: 24px; text-align: center;">
+            <div style="font-size: 36px; margin-bottom: 12px; opacity: 0.9;">🛑</div>
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Something went wrong
+            </h2>
+            <div
+              style="background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: left; overflow-x: auto; max-width: 100%; border: 1px solid rgba(255, 255, 255, 0.05);">
+              <p id="error-message"
+                style="color: var(--error, #ff8a8a); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; margin: 0; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap;">
+              </p>
+            </div>
+            <div style="display: flex; gap: 12px; width: 100%;">
+              <button id="error-retry" class="primary-button" style="flex: 1; padding: 12px;" type="button">Try
+                again</button>
+              <button id="error-settings" class="secondary-button" style="flex: 1; padding: 12px;"
+                type="button">Settings</button>
+            </div>
+          </div>
+        </section>
+
+        <div id="active-state" class="card hidden">
+          <div class="panel-header">
+            <div>
+              <h2>Understanding</h2>
+              <p class="muted">Translation first, then context and pronunciation.</p>
+            </div>
+            <div id="result-status" class="meta-chip">Ready</div>
+          </div>
+
+          <div id="upsell-banner" class="hidden upsell-banner">
+            <strong class="upsell-text">Unlock AI Grammar Guides & Quizzes!</strong>
+            <button id="upsell-button" class="primary-button" style="font-size: 13px; padding: 6px 14px;"
+              type="button">Add Free API Key</button>
+          </div>
+
+          <div class="result-stack">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="section-title" style="margin-bottom: 0;">Selected text</div>
+                <button id="listen-btn" class="ghost-button hidden" type="button" title="Listen to text">🔊</button>
+              </div>
+              <div class="source-box"
+                style="display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 14px; border-left: 3px solid var(--accent);">
+                <div id="pinyin-display" class="pinyin-text hidden"
+                  style="margin-top: 0; margin-bottom: 4px; font-size: 14px; font-weight: 600; font-style: normal; color: var(--accent); letter-spacing: 0.04em; text-transform: lowercase; min-height: 16px;">
                 </div>
-                <div class="source-box" style="display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 14px; border-left: 3px solid var(--accent);">
-                  <div id="pinyin-display" class="pinyin-text hidden" style="margin-top: 0; margin-bottom: 4px; font-size: 14px; font-weight: 600; font-style: normal; color: var(--accent); letter-spacing: 0.04em; text-transform: lowercase; min-height: 16px;"></div>
-                  <div style="display: flex; align-items: flex-end; flex-wrap: wrap;">
-                    <div id="source-text" style="font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--text); font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;"></div>
-                    <span id="pos-tag" class="pos-tag hidden"></span>
+                <div style="display: flex; align-items: flex-end; flex-wrap: wrap;">
+                  <div id="source-text"
+                    style="font-size: 34px; font-weight: 600; line-height: 1.2; color: var(--text); font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;">
                   </div>
-                </div>
-              </div>
-
-              <div class="translation-wrap">
-                <div class="section-title" id="translation-label">Translation</div>
-                <div id="translation" class="translation"></div>
-              </div>
-
-              <div class="section-divider"></div>
-
-              <div class="result-feature">
-                <div class="section-title">Explanation</div>
-                <div id="explanation" class="detail-copy"></div>
-                <div id="example-container" class="example-box hidden">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <p class="example-label" style="margin: 0;">Example Phrase</p>
-                    <button id="listen-example-btn" class="ghost-button hidden" type="button" title="Listen to example" style="padding: 2px 6px; font-size: 13px; opacity: 0.8;">🔊</button>
-                  </div>
-                  <div id="example-pinyin" class="pinyin-text hidden" style="margin-top: 0; margin-bottom: 2px; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;"></div>
-                  <p id="example-original" class="example-text"></p>
-                  <p id="example-translation" class="example-subtext"></p>
-                </div>
-              </div>
-
-              <div class="result-feature">
-                <div class="section-title">Pronunciation</div>
-                <div id="pronunciation" class="pronunciation-line"></div>
-              </div>
-
-              <div id="quiz-section" class="hidden">
-                <div class="section-title">Quick quiz</div>
-                <div class="soft-box">
-                  <div id="quiz-question"></div>
-                  <div id="quiz-answer" class="muted" style="margin-top: 8px;"></div>
-                </div>
-              </div>
-
-              <div class="source-section">
-                <div class="section-title">Source</div>
-                <div id="source-meta" class="meta-line"></div>
-              </div>
-
-              <div class="result-actions">
-                <button id="save-button" class="secondary-button" type="button">Save</button>
-                <span id="save-feedback" class="success-note hidden">Saved</span>
-              </div>
-
-              <div id="saved-editor" class="detail-editor hidden">
-                <div class="section-title">Saved details</div>
-                <input id="saved-tag" type="text" placeholder="Tag or collection" />
-                <textarea id="saved-note" placeholder="Optional note"></textarea>
-                <div class="action-row">
-                  <button id="update-saved-meta" class="secondary-button" type="button">Update saved item</button>
-                  <span id="meta-feedback" class="success-note hidden">Updated</span>
+                  <span id="pos-tag" class="pos-tag hidden"></span>
                 </div>
               </div>
             </div>
-          </section>
-        </section>
 
-        <section data-panel="saved" class="view-panel hidden">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <h2>Saved</h2>
-                <p class="muted">Keep useful words, phrases, and sentences for later.</p>
-              </div>
-              <div id="saved-count" class="count-badge">0 items</div>
+            <div class="translation-wrap">
+              <div class="section-title" id="translation-label">Translation</div>
+              <div id="translation" class="translation"></div>
             </div>
-            <div class="filters">
-              <input id="saved-search" class="filter-input" type="search" placeholder="Search saved items" />
-              <select id="saved-type" class="filter-select">
-                <option value="all">All types</option>
-                <option value="word">Word</option>
-                <option value="phrase">Phrase</option>
-                <option value="sentence">Sentence</option>
-              </select>
-              <select id="saved-language" class="filter-select">
-                <option value="all">All languages</option>
-                <option value="chinese">Chinese</option>
-                <option value="english">English</option>
-              </select>
-            </div>
-            <div id="saved-list" class="list-stack"></div>
-          </section>
-        </section>
 
-        <section data-panel="history" class="view-panel hidden">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <h2>History</h2>
-                <p class="muted">Recent lookups. Newest first.</p>
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <div id="history-count" class="count-badge">0 items</div>
-                <button id="clear-history-button" class="ghost-button" type="button" title="Clear History" style="padding: 6px; display: inline-flex;">
-                  <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-trash"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="filters">
-              <input id="history-search" class="filter-input" type="search" placeholder="Search recent lookups" />
-              <select id="history-language" class="filter-select">
-                <option value="all">All languages</option>
-                <option value="chinese">Chinese</option>
-                <option value="english">English</option>
-              </select>
-            </div>
-            <div id="history-list" class="list-stack"></div>
-          </section>
-        </section>
+            <div class="section-divider"></div>
 
-        <section data-panel="review" class="view-panel hidden">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <h2>Review</h2>
-                <p class="muted">Run through a few saved items without leaving the extension.</p>
-              </div>
-              <button id="start-review" class="primary-button" type="button">Review 5 items</button>
-            </div>
-            <div id="review-empty" class="soft-box">
-              <h3>Nothing to review yet</h3>
-              <p class="empty-copy">Save a few lookups first. Review uses your saved items only.</p>
-            </div>
-            <div id="review-session" class="review-stack hidden">
-              <div class="split-actions">
-                <div id="review-progress" class="count-badge">1 / 5</div>
-                <button id="next-review" class="secondary-button" type="button">Next item</button>
-              </div>
-              <div id="review-card" class="review-card"></div>
-            </div>
-          </section>
-        </section>
-
-        <section data-panel="map" class="view-panel hidden">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <h2>Constellation Memory Map</h2>
-                <p class="muted">See saved knowledge as clusters you can revisit and review.</p>
-              </div>
-              <div id="map-count" class="count-badge">0 nodes</div>
-            </div>
-            <div id="map-empty" class="map-empty soft-box hidden">
-              <h3>Your map is empty</h3>
-              <p class="empty-copy">Save words and phrases while browsing. Return here to see them gather into constellations.</p>
-            </div>
-            <div id="map-stack" class="map-stack hidden">
-              <div class="map-shell">
-                <svg id="map-svg" class="map-canvas" viewBox="0 0 320 320" role="img" aria-label="Constellation memory map"></svg>
-                <div class="map-caption">
-                  <span>Clusters follow shared tags when they exist. Otherwise they group by source language.</span>
-                  <span>Glow reflects review strength.</span>
+            <div class="result-feature">
+              <div class="section-title">Explanation</div>
+              <div id="explanation" class="detail-copy"></div>
+              <div id="example-container" class="example-box hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <p class="example-label" style="margin: 0;">Example Phrase</p>
+                  <button id="listen-example-btn" class="ghost-button hidden" type="button" title="Listen to example"
+                    style="padding: 2px 6px; font-size: 13px; opacity: 0.8;">🔊</button>
                 </div>
+                <div id="example-pinyin" class="pinyin-text hidden"
+                  style="margin-top: 0; margin-bottom: 2px; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif;">
+                </div>
+                <p id="example-original" class="example-text"></p>
+                <p id="example-translation" class="example-subtext"></p>
               </div>
-              <div id="map-detail" class="map-detail"></div>
             </div>
-          </section>
+
+            <div class="result-feature">
+              <div class="section-title">Pronunciation</div>
+              <div id="pronunciation" class="pronunciation-line"></div>
+            </div>
+
+            <div id="quiz-section" class="hidden">
+              <div class="section-title">Quick quiz</div>
+              <div class="soft-box">
+                <div id="quiz-question"></div>
+                <div id="quiz-answer" class="muted" style="margin-top: 8px;"></div>
+              </div>
+            </div>
+
+            <div class="source-section">
+              <div class="section-title">Source</div>
+              <div id="source-meta" class="meta-line"></div>
+            </div>
+
+            <div class="result-actions">
+              <button id="save-button" class="secondary-button" type="button">Save</button>
+              <span id="save-feedback" class="success-note hidden">Saved</span>
+            </div>
+
+            <div id="saved-editor" class="detail-editor hidden">
+              <div class="section-title">Saved details</div>
+              <input id="saved-tag" type="text" placeholder="Tag or collection" />
+              <textarea id="saved-note" placeholder="Optional note"></textarea>
+              <div class="action-row">
+                <button id="update-saved-meta" class="secondary-button" type="button">Update saved item</button>
+                <span id="meta-feedback" class="success-note hidden">Updated</span>
+              </div>
+            </div>
+          </div>
+      </section>
+      </section>
+
+      <section data-panel="saved" class="view-panel hidden">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Saved</h2>
+              <p class="muted">Keep useful words, phrases, and sentences for later.</p>
+            </div>
+            <div id="saved-count" class="count-badge">0 items</div>
+          </div>
+          <div class="filters">
+            <input id="saved-search" class="filter-input" type="search" placeholder="Search saved items" />
+            <select id="saved-type" class="filter-select">
+              <option value="all">All types</option>
+              <option value="word">Word</option>
+              <option value="phrase">Phrase</option>
+              <option value="sentence">Sentence</option>
+            </select>
+            <select id="saved-language" class="filter-select">
+              <option value="all">All languages</option>
+              <option value="chinese">Chinese</option>
+              <option value="english">English</option>
+            </select>
+          </div>
+          <div id="saved-list" class="list-stack"></div>
         </section>
-      </div>
-    </main>
-    <script src="pinyin-pro.js"></script>
-    <script type="module" src="sidepanel.js"></script>
-  </body>
+      </section>
+
+      <section data-panel="history" class="view-panel hidden">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>History</h2>
+              <p class="muted">Recent lookups. Newest first.</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <div id="history-count" class="count-badge">0 items</div>
+              <button id="clear-history-button" class="ghost-button" type="button" title="Clear History"
+                style="padding: 6px; display: inline-flex;">
+                <svg width="16" height="16" style="pointer-events: none;">
+                  <use href="#icon-trash" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="filters">
+            <input id="history-search" class="filter-input" type="search" placeholder="Search recent lookups" />
+            <select id="history-language" class="filter-select">
+              <option value="all">All languages</option>
+              <option value="chinese">Chinese</option>
+              <option value="english">English</option>
+            </select>
+          </div>
+          <div id="history-list" class="list-stack"></div>
+        </section>
+      </section>
+
+      <section data-panel="review" class="view-panel hidden">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Review</h2>
+              <p class="muted">Run through a few saved items without leaving the extension.</p>
+            </div>
+            <button id="start-review" class="primary-button" type="button">Review 5 items</button>
+          </div>
+          <div id="review-empty" class="soft-box">
+            <h3>Nothing to review yet</h3>
+            <p class="empty-copy">Save a few lookups first. Review uses your saved items only.</p>
+          </div>
+          <div id="review-session" class="review-stack hidden">
+            <div class="split-actions">
+              <div id="review-progress" class="count-badge">1 / 5</div>
+              <button id="next-review" class="secondary-button" type="button">Next item</button>
+            </div>
+            <div id="review-card" class="review-card"></div>
+          </div>
+        </section>
+      </section>
+
+      <section data-panel="map" class="view-panel hidden">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Constellation Memory Map</h2>
+              <p class="muted">See saved knowledge as clusters you can revisit and review.</p>
+            </div>
+            <div id="map-count" class="count-badge">0 nodes</div>
+          </div>
+          <div id="map-empty" class="map-empty soft-box hidden">
+            <h3>Your map is empty</h3>
+            <p class="empty-copy">Save words and phrases while browsing. Return here to see them gather into
+              constellations.</p>
+          </div>
+          <div id="map-stack" class="map-stack hidden">
+            <div class="map-shell">
+              <svg id="map-svg" class="map-canvas" viewBox="0 0 320 320" role="img"
+                aria-label="Constellation memory map"></svg>
+              <div class="map-caption">
+                <span>Clusters follow shared tags when they exist. Otherwise they group by source language.</span>
+                <span>Glow reflects review strength.</span>
+              </div>
+            </div>
+            <div id="map-detail" class="map-detail"></div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </main>
+  <script src="pinyin-pro.js"></script>
+  <script type="module" src="sidepanel.js"></script>
+</body>
+
 </html>

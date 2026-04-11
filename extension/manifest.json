@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "LexiDrop: Reading Assistant",
-  "version": "1.1.1",
-  "description": "Highlight Chinese or English text and get Bengali translation, explanation, and pronunciation in a side panel.",
-  "permissions": ["storage", "sidePanel", "contextMenus", "tabs"],
+  "name": "LexiDrop: AI Language Assistant & Translator",
+  "short_name": "LexiDrop",
+  "version": "1.1.2",
+  "description": "Highlight any text to get intelligent translations, native audio, and detailed context for any language using advanced AI.",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "contextMenus",
+    "tabs"
+  ],
   "host_permissions": [
     "https://openrouter.ai/*",
     "https://api.deepseek.com/*",
@@ -28,8 +34,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["onboarding.html", "onboarding.js", "onboarding.css", "sidepanel.html"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "onboarding.html",
+        "onboarding.js",
+        "onboarding.css",
+        "sidepanel.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "author": "Hasan Rabbi"

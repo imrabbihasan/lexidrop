@@ -250,6 +250,30 @@
           </ul>
         </div>
       </section>
+
+      <section class="panel" style="margin-top: 20px;">
+        <div class="eyebrow">Voice settings</div>
+        <h1 style="font-size: 24px; max-width: 100%;">Chinese Pronunciation</h1>
+        <p>Choose which voice your system uses when reading Chinese text aloud. High-quality voices are marked with ✦.</p>
+
+        <form id="voice-form" style="margin-top: 24px;">
+          <label>
+            Chinese Voice
+            <span class="field-help">Voices marked ✦ are high-quality Neural / Natural voices (best for Edge or Chrome on Windows/Mac).</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <select id="voice-select" name="chineseVoice" style="flex: 1;"></select>
+              <button id="test-voice-btn" type="button" style="white-space: nowrap; flex-shrink: 0; padding: 12px 16px; font-size: 14px;">🔊 Test</button>
+            </div>
+          </label>
+
+          <div id="voice-status" style="font-size: 13px; color: var(--muted); min-height: 18px;"></div>
+
+          <div class="actions">
+            <button type="submit">Save voice</button>
+            <span id="voice-save-status" class="status"></span>
+          </div>
+        </form>
+      </section>
     </main>
 
     <script type="module" src="options.js"></script>

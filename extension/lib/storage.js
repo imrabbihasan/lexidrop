@@ -72,3 +72,12 @@ export async function getNativeLanguage() {
 export async function setNativeLanguage(language) {
   await chrome.storage.sync.set({ [STORAGE_KEYS.NATIVE_LANGUAGE]: language });
 }
+
+export async function getChineseVoiceName() {
+  const stored = await chrome.storage.sync.get(STORAGE_KEYS.CHINESE_VOICE_NAME);
+  return stored[STORAGE_KEYS.CHINESE_VOICE_NAME] || "";
+}
+
+export async function setChineseVoiceName(name) {
+  await chrome.storage.sync.set({ [STORAGE_KEYS.CHINESE_VOICE_NAME]: name });
+}

@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   SAVED_ITEMS: "savedItems",
   HISTORY_ITEMS: "historyItems",
   NATIVE_LANGUAGE: "nativeLanguage",
+  CHINESE_VOICE_NAME: "chineseVoiceName",
 };
 
 export const DEFAULT_PROVIDER_CONFIG = {

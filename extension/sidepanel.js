@@ -27,6 +27,7 @@ import {
   getNativeLanguage,
   getPendingSelection,
   getProviderConfig,
+  getChineseVoiceName,
 } from "./lib/storage.js";
 
 const STAGE_COLORS = {
@@ -164,28 +165,36 @@ function playAudio(text) {
   const isChinese = /[\u4e00-\u9fa5]/.test(text);
 
   if (isChinese) {
-    executeVoice(text, 'zh-CN', true);
+    getChineseVoiceName().then(savedVoiceName => {
+      executeVoice(text, 'zh-CN', true, savedVoiceName);
+    });
   } else {
     chrome.i18n.detectLanguage(text, (result) => {
       let langCode = 'en-US';
       if (result && result.languages && result.languages.length > 0) {
         langCode = result.languages[0].language;
       }
-      executeVoice(text, langCode, false);
+      executeVoice(text, langCode, false, null);
     });
   }
 }
 
-function executeVoice(text, langCode, isChinese) {
+function executeVoice(text, langCode, isChinese, savedVoiceName) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = isChinese ? 'zh-CN' : langCode;
-  utterance.rate = isChinese ? 0.75 : 0.85;
+  utterance.rate = isChinese ? 0.85 : 0.85;
 
   const voices = window.speechSynthesis.getVoices();
   if (voices.length > 0) {
     let voice;
     if (isChinese) {
-      voice = voices.find(v => (v.name.includes('Xiaoxiao') || v.name.includes('Natural')) && v.lang.includes('zh'));
+      // First: honour the user's saved voice preference
+      if (savedVoiceName) {
+        voice = voices.find(v => v.name === savedVoiceName);
+      }
+      // Fallback: pick best quality Chinese voice automatically
+      if (!voice) voice = voices.find(v => (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Neural')) && v.lang.includes('zh'));
+      if (!voice) voice = voices.find(v => v.name.includes('Microsoft') && v.lang.includes('zh'));
       if (!voice) voice = voices.find(v => v.name.includes('Google 普通话'));
       if (!voice) voice = voices.find(v => v.lang.includes('zh'));
     } else {
@@ -193,7 +202,6 @@ function executeVoice(text, langCode, isChinese) {
       voice = voices.find(v => v.name.includes('Natural') && v.lang.startsWith(shortLang));
       if (!voice) voice = voices.find(v => v.name.includes('Google') && v.lang.startsWith(shortLang));
       if (!voice) voice = voices.find(v => v.lang.startsWith(shortLang));
-      
       if (!voice) voice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
     }
 
