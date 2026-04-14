@@ -2,13 +2,14 @@
   "manifest_version": 3,
   "name": "LexiDrop: AI Language Assistant & Translator",
   "short_name": "LexiDrop",
-  "version": "1.1.2",
-  "description": "Highlight any text to get intelligent translations, native audio, and detailed context for any language using advanced AI.",
+  "version": "1.1.3",
+  "description": "Highlight any text to get intelligent translations, native audio, and detailed context using advanced AI.",
   "permissions": [
     "storage",
     "sidePanel",
     "contextMenus",
-    "tabs"
+    "tabs",
+    "tts"
   ],
   "host_permissions": [
     "https://openrouter.ai/*",
@@ -17,20 +18,35 @@
   ],
   "background": {
     "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ],
     "type": "module"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
+  },
+  "sidebar_action": {
+    "default_panel": "sidepanel.html",
+    "default_icon": "logo.png"
   },
   "action": {
     "default_title": "Open LexiDrop"
   },
   "options_page": "options.html",
   "icons": {
-    "16": "logo.png",
-    "32": "logo.png",
-    "48": "logo.png",
     "128": "logo.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "rabbihasan.dev@outlook.com",
+      "strict_min_version": "126.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
   },
   "web_accessible_resources": [
     {

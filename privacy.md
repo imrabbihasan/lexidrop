@@ -1,46 +1,113 @@
-# Privacy Policy for LexiDrop
+# Privacy Policy — LexiDrop: AI Language Assistant & Translator
 
-**Last Updated: January 1, 2026**
+**Extension ID:** rabbihasan.dev@outlook.com  
+**Author:** Hasan Rabbi  
+**Last updated:** April 2026  
+**Platform:** Mozilla Firefox Add-on (also available for Chromium browsers)
 
-Welcome to LexiDrop! This Privacy Policy explains how we collect, use, and protect your information when you use our vocabulary learning application.
+---
 
-## 1. Information We Collect
+## Summary
 
-LexiDrop is designed with privacy in mind.
+LexiDrop is a **privacy-first** browser extension. It does **not** collect, transmit, or store any personal data on external servers operated by the developer. All data remains entirely within your own browser and, when you choose to use AI features, is sent only to the AI provider you personally configured with your own API key.
 
-*   **User Content**: We collect and store the words and phrases you voluntarily input into the application for the purpose of translation and flashcard generation.
-*   **Usage Data**: The application stores your vocabulary list locally on your device or in a local database. We do not sync this data to any remote cloud servers other than the API interactions described below.
+---
 
-## 2. How We Use Your Information
+## 1. Data We Do NOT Collect
 
-We use the information you provide to:
-*   Provide language translations and definitions.
-*   Generate study materials such as flashcards.
-*   Display Pinyin and phonetic guides for supported languages.
+The developer of LexiDrop **never** receives:
 
-## 3. Sharing of Information (AI Services)
+- Your highlighted text or browsing content
+- Your API keys
+- Your translation history or saved vocabulary
+- Your IP address, browser fingerprint, or device information
+- Any analytics, crash reports, or telemetry
 
-To provide translations and AI-powered explanations, LexiDrop sends the text you input to third-party AI service providers.
+This is confirmed by the `data_collection_permissions` declaration in our manifest:
 
-*   **Service Providers**: We currently use **OpenAI (DeepSeek)** and/or **Google Gemini** as our AI engines.
-*   **Data Shared**: Only the specific words or phrases you submit for translation are sent to these services.
-*   **Purpose**: To generate translations, definitions, and usage examples.
-*   **Privacy**: These third-party services process your data in accordance with their own privacy policies. We do not send personally identifiable information (PII) to these services.
+```json
+"data_collection_permissions": {
+  "required": ["none"]
+}
+```
 
-## 4. Data Storage and Security
+---
 
-*   **Local Storage**: Your vocabulary list is stored locally on your machine. You have full control over this data and can delete words at any time.
-*   **Security**: We implement reasonable security measures to protect your data. However, please note that no method of electronic transmission or local storage is 100% secure.
+## 2. Data Stored Locally on Your Device
+
+LexiDrop stores the following data **exclusively in your browser's local storage** (`browser.storage.local` and `browser.storage.sync`). This data never leaves your device except as described in Section 3.
+
+| Data | Storage Location | Purpose |
+|---|---|---|
+| Your selected AI provider name | `storage.sync` | Remember your provider setting |
+| Your AI model name | `storage.sync` | Remember your model preference |
+| Your API key | `storage.sync` | Sent only to your chosen AI provider |
+| Your native language preference | `storage.sync` | Generate translations in your language |
+| Your preferred Chinese TTS voice | `storage.sync` | Remember your voice selection |
+| Translation history | `storage.local` | Display your past lookups in the History tab |
+| Saved vocabulary items | `storage.local` | Power the Saved and Review tabs |
+| Current result cache | `storage.local` | Restore your last result when you reopen the panel |
+| Pending text selection | `storage.local` | Temporarily hold a word between the context menu click and panel load |
+
+You can delete all locally stored data at any time by clicking **"Clear History"** in the extension panel or by removing the extension entirely from Firefox.
+
+---
+
+## 3. Data Sent to Third-Party AI Providers (User-Initiated Only)
+
+When you highlight text and choose **"Understand with LexiDrop"**, the selected text is sent to the AI provider you have configured in the extension settings. This is the **sole** external network request made by LexiDrop.
+
+- **What is sent:** The highlighted text, your chosen language preference, and your API key (as an HTTP Authorization header).
+- **Who receives it:** Only the provider you selected — OpenRouter, DeepSeek, or Groq. The developer of LexiDrop receives nothing.
+- **When it is sent:** Only on explicit user action (right-clicking → selecting LexiDrop from the context menu). LexiDrop never runs in the background or auto-monitors any page.
+- **No API key, no AI request:** If you have not configured an API key, LexiDrop uses the free MyMemory translation API. Only the selected text is sent to MyMemory's public API endpoint.
+
+**Third-party provider privacy policies:**
+- OpenRouter: https://openrouter.ai/privacy
+- DeepSeek: https://www.deepseek.com/privacy
+- Groq: https://groq.com/privacy-policy
+- MyMemory (fallback): https://mymemory.translated.net/doc/usagelimits.php
+
+---
+
+## 4. Permissions Justification
+
+Firefox requires extensions to justify each requested permission. Here is our justification:
+
+| Permission | Reason |
+|---|---|
+| `storage` | Save your settings, vocabulary, and history locally in the browser |
+| `contextMenus` | Add the "Understand with LexiDrop" option to the right-click menu |
+| `tabs` | Read the current tab's URL and title to display source context alongside a translation |
+| `tts` | Use the browser's built-in Text-to-Speech engine to read selected text aloud |
+| `sidePanel` *(Chrome only)* | Open LexiDrop in the native browser side panel |
+
+> **Note:** The `sidePanel` permission is declared for Chromium compatibility. Firefox ignores it and uses the `sidebar_action` API instead. Neither requires access to page content.
+
+**Host permissions** (`openrouter.ai`, `api.deepseek.com`, `api.groq.com`) are required solely to allow the extension's background script to make API requests to your chosen provider. These requests are only made on your explicit action and contain only your selected text and API key.
+
+---
 
 ## 5. Children's Privacy
 
-LexiDrop does not knowingly collect personal information from children under the age of 13.
+LexiDrop is not directed at children under 13 years of age and does not knowingly collect any information from children.
+
+---
 
 ## 6. Changes to This Policy
 
-We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.
+If a future update changes how data is handled, the **"Last updated"** date at the top of this document will be updated and a note will be added to the extension's changelog. Continued use of the extension after an update constitutes acceptance of the revised policy.
 
-## 7. Contact Us
+---
 
-If you have any questions about this Privacy Policy, please contact us at:
-rabbihasan.dev@outlook.com
+## 7. Contact
+
+If you have any questions about this privacy policy or how LexiDrop handles data, please contact:
+
+**Hasan Rabbi**  
+📧 rabbihasan.dev@outlook.com  
+🔗 GitHub: https://github.com/rabbihasan
+
+---
+
+*LexiDrop is open-source. You are welcome to inspect every line of code to verify these claims.*

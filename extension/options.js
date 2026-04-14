@@ -19,22 +19,15 @@ function setStatus(message) {
 }
 
 function renderProviderOptions() {
-  providerSelect.innerHTML = getProviderEntries()
-    .map(
-      (provider) =>
-        `<option value="${provider.id}">${provider.label}</option>`
-    )
-    .join("");
-}
+  // 1. Clear the select box safely
+  providerSelect.textContent = "";
 
-function syncModelPlaceholder() {
-  const provider = getProvider(providerSelect.value);
-  modelInput.placeholder = provider.defaultModel;
-  apiKeyInput.placeholder = provider.apiKeyPlaceholder;
-
-  if (!modelInput.value.trim()) {
-    modelInput.value = provider.defaultModel;
-  }
+  // 2. Loop through and create real Option objects
+  getProviderEntries().forEach((provider) => {
+    // Syntax: new Option(text, value)
+    const opt = new Option(provider.label, provider.id);
+    providerSelect.add(opt);
+  });
 }
 
 // Voice quality scoring — higher = better quality
@@ -51,22 +44,31 @@ function populateVoiceSelect(savedVoiceName) {
     .filter(v => v.lang.startsWith("zh"))
     .sort((a, b) => scoreVoice(b) - scoreVoice(a));
 
+  // 1. Clear the dropdown safely
+  voiceSelect.textContent = "";
+
   if (chineseVoices.length === 0) {
     voiceStatus.textContent = "No Chinese voices found on this system. Install a Chinese voice in your OS settings.";
-    voiceSelect.innerHTML = `<option value="">— No Chinese voices available —</option>`;
+    // Use the Option constructor: new Option(text, value)
+    voiceSelect.add(new Option("— No Chinese voices available —", ""));
     return;
   }
 
   voiceStatus.textContent = `${chineseVoices.length} Chinese voice${chineseVoices.length > 1 ? "s" : ""} found.`;
 
-  voiceSelect.innerHTML = chineseVoices.map(v => {
+  // 2. Loop and add real Option objects
+  chineseVoices.forEach(v => {
     const isHighQuality = scoreVoice(v) === 3;
     const label = `${isHighQuality ? "✦ " : ""}${v.name} (${v.lang})`;
-    const selected = v.name === savedVoiceName ? " selected" : "";
-    return `<option value="${v.name}"${selected}>${label}</option>`;
-  }).join("");
 
-  // Auto-select best available if no saved preference matches
+    // Syntax: new Option(text, value, defaultSelected, selected)
+    const isSelected = v.name === savedVoiceName;
+    const opt = new Option(label, v.name, isSelected, isSelected);
+
+    voiceSelect.add(opt);
+  });
+
+  // 3. Handle status message for missing saved preference
   if (savedVoiceName && !chineseVoices.find(v => v.name === savedVoiceName)) {
     voiceStatus.textContent += " (Saved voice not found — showing best available.)";
   }
@@ -74,11 +76,39 @@ function populateVoiceSelect(savedVoiceName) {
 
 async function loadVoiceSettings() {
   const savedVoiceName = await getChineseVoiceName();
-  // Voices may not be loaded yet on first call — wait for them
-  if (window.speechSynthesis.getVoices().length === 0) {
-    window.speechSynthesis.onvoiceschanged = () => populateVoiceSelect(savedVoiceName);
-  } else {
-    populateVoiceSelect(savedVoiceName);
+
+  const tryPopulate = () => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      populateVoiceSelect(savedVoiceName);
+      return true;
+    }
+    return false;
+  };
+
+  // 1. Try immediately
+  if (!tryPopulate()) {
+    // 2. If empty, listen for the event
+    window.speechSynthesis.onvoiceschanged = () => {
+      tryPopulate();
+      // Clean up the listener so it doesn't fire multiple times
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+
+    // 3. Fail-safe: Try again in 1 second just in case
+    setTimeout(tryPopulate, 1000);
+  }
+}
+
+function syncModelPlaceholder() {
+  const provider = getProvider(providerSelect.value);
+  if (!provider) return;
+
+  modelInput.placeholder = provider.defaultModel || "";
+  apiKeyInput.placeholder = provider.apiKeyPlaceholder || "Enter API Key";
+
+  if (!modelInput.value.trim()) {
+    modelInput.value = provider.defaultModel || "";
   }
 }
 

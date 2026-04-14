@@ -161,7 +161,7 @@ function escapeHtml(value) {
 function playAudio(text) {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  
+
   const isChinese = /[\u4e00-\u9fa5]/.test(text);
 
   if (isChinese) {
@@ -263,17 +263,31 @@ function renderError(message) {
 }
 
 function renderSourceMeta(lookup, savedMatch) {
-  const chips = [
-    lookup.sourceLanguage ? `<span class="meta-chip">${escapeHtml(formatLabel(lookup.sourceLanguage))}</span>` : "",
-    lookup.itemType ? `<span class="meta-chip">${escapeHtml(formatLabel(lookup.itemType))}</span>` : "",
-    lookup.pageDomain ? `<span class="meta-chip">${escapeHtml(lookup.pageDomain)}</span>` : "",
-    lookup.pageTitle ? `<span class="meta-chip">${escapeHtml(lookup.pageTitle)}</span>` : "",
-    savedMatch?.progressStage
-      ? `<span class="meta-chip stage-${escapeHtml(savedMatch.progressStage)}">${escapeHtml(formatLabel(savedMatch.progressStage))}</span>`
-      : "",
-  ].filter(Boolean);
+  // 1. Clear the container safely
+  elements.sourceMeta.textContent = "";
 
-  elements.sourceMeta.innerHTML = chips.join("");
+  // 2. Create a helper to build chips without textContent
+  const addChip = (text, extraClass = null) => {
+    if (!text) return;
+    const span = document.createElement('span');
+    span.className = 'meta-chip';
+    if (extraClass) span.classList.add(extraClass);
+    span.textContent = text; // Safe: browser treats this as text, not HTML
+    elements.sourceMeta.appendChild(span);
+  };
+
+  // 3. Add each piece of data
+  addChip(lookup.sourceLanguage ? formatLabel(lookup.sourceLanguage) : null);
+  addChip(lookup.itemType ? formatLabel(lookup.itemType) : null);
+  addChip(lookup.pageDomain);
+  addChip(lookup.pageTitle);
+
+  if (savedMatch?.progressStage) {
+    addChip(
+      formatLabel(savedMatch.progressStage),
+      `stage-${savedMatch.progressStage}`
+    );
+  }
 }
 
 function renderResult(lookup) {
@@ -306,9 +320,9 @@ function renderResult(lookup) {
   if (lookup.exampleSentence) {
     elements.exampleOriginal.textContent = lookup.exampleSentence.original;
     elements.exampleTranslation.textContent = lookup.exampleSentence.translation;
-    
+
     setHidden(elements.listenExampleBtn, false);
-    
+
     const isExampleChinese = /[\u4e00-\u9fa5]/.test(lookup.exampleSentence.original);
     if (isExampleChinese && window.pinyinPro) {
       const examplePinyinText = window.pinyinPro.pinyin(lookup.exampleSentence.original);
@@ -317,22 +331,25 @@ function renderResult(lookup) {
     } else {
       setHidden(elements.examplePinyin, true);
     }
-    
+
     setHidden(elements.exampleContainer, false);
   } else {
     setHidden(elements.exampleContainer, true);
     setHidden(elements.listenExampleBtn, true);
     setHidden(elements.examplePinyin, true);
   }
-  
+
   const isChinese = /[\u4e00-\u9fa5]/.test(lookup.originalText);
-  if (isChinese && window.pinyinPro) {
-    const pinyinText = window.pinyinPro.pinyin(lookup.originalText);
-    elements.pinyinDisplay.textContent = pinyinText;
-    setHidden(elements.pinyinDisplay, false);
-  } else if (lookup.pinyin) {
-    elements.pinyinDisplay.textContent = lookup.pinyin;
-    setHidden(elements.pinyinDisplay, false);
+  if (isChinese) {
+    if (window.pinyinPro) {
+      elements.pinyinDisplay.textContent = window.pinyinPro.pinyin(lookup.originalText);
+      setHidden(elements.pinyinDisplay, false);
+    } else if (lookup.pinyin) {
+      elements.pinyinDisplay.textContent = lookup.pinyin;
+      setHidden(elements.pinyinDisplay, false);
+    } else {
+      setHidden(elements.pinyinDisplay, true);
+    }
   } else {
     setHidden(elements.pinyinDisplay, true);
   }
@@ -395,23 +412,23 @@ async function persistCurrentResult(lookup) {
     lookup.translationBn
       ? lookup
       : buildCurrentResult({
-          text: lookup.originalText,
-          result: {
-            translation: lookup.translatedText,
-            explanation: lookup.explanation,
-            partOfSpeech: lookup.partOfSpeech,
-            exampleSentence: lookup.exampleSentence,
-            pinyin: lookup.pinyin,
-            pronunciation: lookup.pronunciation,
-            quiz: lookup.quiz,
-          },
-          source: {
-            language: lookup.sourceLanguage,
-            pageUrl: lookup.pageUrl,
-            pageDomain: lookup.pageDomain,
-            pageTitle: lookup.pageTitle,
-          },
-        })
+        text: lookup.originalText,
+        result: {
+          translation: lookup.translatedText,
+          explanation: lookup.explanation,
+          partOfSpeech: lookup.partOfSpeech,
+          exampleSentence: lookup.exampleSentence,
+          pinyin: lookup.pinyin,
+          pronunciation: lookup.pronunciation,
+          quiz: lookup.quiz,
+        },
+        source: {
+          language: lookup.sourceLanguage,
+          pageUrl: lookup.pageUrl,
+          pageDomain: lookup.pageDomain,
+          pageTitle: lookup.pageTitle,
+        },
+      })
   );
   state.currentLookup = toResultViewModel(persisted);
   return state.currentLookup;
@@ -439,50 +456,16 @@ function renderSavedList() {
   });
 
   elements.savedCount.textContent = `${filtered.length} item${filtered.length === 1 ? "" : "s"}`;
+  elements.savedList.textContent = '';
 
   if (!filtered.length) {
-    elements.savedList.innerHTML = `
-      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
-        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
-        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">No saved items</h1>
-        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Save useful results from the Result or History tabs.</p>
-      </div>`;
+    elements.savedList.appendChild(createEmptyState("No saved items", "Save results from Result or History."));
     return;
   }
 
-  elements.savedList.innerHTML = filtered
-    .map(
-      (item) => `
-        <article class="list-card">
-          <div class="meta-line">
-            <span class="meta-chip">${escapeHtml(formatLabel(item.sourceLanguage))}</span>
-            <span class="meta-chip">${escapeHtml(formatLabel(item.itemType))}</span>
-            <span class="meta-chip">${escapeHtml(formatLabel(item.progressStage))}</span>
-            <span class="meta-chip">${escapeHtml(formatRelativeDate(item.savedAt))}</span>
-            ${item.tag ? `<span class="meta-chip">${escapeHtml(item.tag)}</span>` : ""}
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px 0;">
-            ${getPinyinHtml(item)}
-            <strong style="font-size: 16px; letter-spacing: 0.02em;">${escapeHtml(item.originalText)}</strong>
-          </div>
-          <p>${escapeHtml(item.translatedText || item.explanation || "No preview available.")}</p>
-          <div class="muted">${escapeHtml(item.pageTitle || item.pageDomain || "No source details")}</div>
-          ${item.note ? `<div class="muted">Note: ${escapeHtml(item.note)}</div>` : ""}
-          <div class="action-icon-row">
-            <button class="action-icon-btn" data-action="review-saved" data-id="${item.id}" type="button" title="Review">
-              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-review"/></svg>
-            </button>
-            <button class="action-icon-btn" data-action="open-saved" data-id="${item.id}" type="button" title="Open">
-              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-open"/></svg>
-            </button>
-            <button class="action-icon-btn danger" data-action="delete-saved" data-id="${item.id}" type="button" title="Delete">
-              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-trash"/></svg>
-            </button>
-          </div>
-        </article>
-      `
-    )
-    .join("");
+  filtered.forEach(item => {
+    elements.savedList.appendChild(createItemCard(item, true));
+  });
 }
 
 function renderHistoryList() {
@@ -492,71 +475,40 @@ function renderHistoryList() {
   });
 
   elements.historyCount.textContent = `${filtered.length} item${filtered.length === 1 ? "" : "s"}`;
+  elements.historyList.textContent = '';
 
   if (!filtered.length) {
-    elements.historyList.innerHTML = `
-      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
-        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
-        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">No recent lookups</h1>
-        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">History fills automatically after successful results.</p>
-      </div>`;
+    elements.historyList.appendChild(createEmptyState("No recent lookups", "History fills after successful results."));
     return;
   }
 
-  elements.historyList.innerHTML = filtered
-    .map(
-      (item) => `
-        <article class="list-card">
-          <div class="meta-line">
-            <span class="meta-chip">${escapeHtml(formatLabel(item.sourceLanguage))}</span>
-            <span class="meta-chip">${escapeHtml(formatLabel(item.itemType))}</span>
-            <span class="meta-chip">${escapeHtml(formatRelativeDate(item.lookedUpAt))}</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px 0;">
-            ${getPinyinHtml(item)}
-            <strong style="font-size: 16px; letter-spacing: 0.02em;">${escapeHtml(item.originalText)}</strong>
-          </div>
-          <p>${escapeHtml(item.translatedText || item.explanation || "No preview available.")}</p>
-          <div class="muted">${escapeHtml(item.pageTitle || item.pageDomain || "No source details")}</div>
-          <div class="action-icon-row">
-            <button class="action-icon-btn" data-action="save-history" data-id="${item.id}" type="button" title="Save">
-              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-saved"/></svg>
-            </button>
-            <button class="action-icon-btn" data-action="open-history" data-id="${item.id}" type="button" title="Open">
-              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-open"/></svg>
-            </button>
-            <button class="action-icon-btn danger" data-action="delete-history" data-id="${item.id}" type="button" title="Delete">
-              <svg width="16" height="16" style="pointer-events: none;"><use href="#icon-trash"/></svg>
-            </button>
-          </div>
-        </article>
-      `
-    )
-    .join("");
+  filtered.forEach(item => {
+    elements.historyList.appendChild(createItemCard(item, false));
+  });
 }
 
 function renderReviewState() {
+  // 1. CLEAR the raw text bug first
+  elements.reviewEmpty.textContent = '';
+
+  // 2. Handle the three "Empty" cases using the helper
   if (!state.savedItems.length) {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
-    elements.reviewEmpty.innerHTML = `
-      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
-        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
-        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Nothing to review yet</h1>
-        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Save a few lookups first. Review uses your saved items only.</p>
-      </div>`;
+    elements.reviewEmpty.appendChild(createEmptyState(
+      "Nothing to review yet",
+      "Save a few lookups first. Review uses your saved items only."
+    ));
     return;
   }
 
   if (!state.review.items.length) {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
-    elements.reviewEmpty.innerHTML = `
-      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
-        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
-        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Ready to review</h1>
-        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Start a quick session with a few saved items.</p>
-      </div>`;
+    elements.reviewEmpty.appendChild(createEmptyState(
+      "Ready to review",
+      "Start a quick session with a few saved items."
+    ));
     return;
   }
 
@@ -564,57 +516,122 @@ function renderReviewState() {
   if (!item) {
     setHidden(elements.reviewEmpty, false);
     setHidden(elements.reviewSession, true);
-    elements.reviewEmpty.innerHTML = `
-      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-top: 24px;">
-        <div class="empty-illustration" aria-hidden="true" style="margin: 0 auto 12px auto;"></div>
-        <h1 style="font-size: 18px; color: var(--text-soft); line-height: 1.35; margin-bottom: 6px;">Review complete</h1>
-        <p class="muted" style="font-size: 13px; max-width: 250px; margin: 0 auto;">Run another short session whenever you want.</p>
-      </div>`;
+    elements.reviewEmpty.appendChild(createEmptyState(
+      "Review complete",
+      "Run another short session whenever you want."
+    ));
     return;
   }
 
+  // 2. Setup Active Session UI
   setHidden(elements.reviewEmpty, true);
   setHidden(elements.reviewSession, false);
-
-  const optionsMarkup = item.options.length
-    ? `<div class="choice-list">${item.options
-        .map((option) => {
-          const isSelected = state.review.selectedOption === option;
-          const isCorrect = option === item.translatedText;
-          const stateClass = !state.review.reveal
-            ? ""
-            : isCorrect
-              ? "correct"
-              : isSelected
-                ? "incorrect"
-                : "";
-
-          return `<button class="choice-button ${stateClass}" data-review-option="${escapeHtml(option)}" type="button">${escapeHtml(option)}</button>`;
-        })
-        .join("")}</div>`
-    : "";
-
   elements.reviewProgress.textContent = `${state.review.index + 1} / ${state.review.items.length}`;
-  elements.reviewCard.innerHTML = `
-    <div class="review-stack">
-      <div class="meta-line">
-        <span class="meta-chip">${escapeHtml(formatLabel(item.sourceLanguage))}</span>
-        <span class="meta-chip">${escapeHtml(formatLabel(item.itemType))}</span>
-        <span class="meta-chip">${escapeHtml(formatLabel(item.progressStage))}</span>
-      </div>
-      <div>
-        <div class="section-title">Prompt</div>
-        ${getPinyinHtml(item, "12px")}
-        <h3 style="margin-top: 2px;">${escapeHtml(item.originalText)}</h3>
-      </div>
-      ${optionsMarkup}
-      <div class="action-row">
-        <button id="reveal-review" class="secondary-button" type="button">${state.review.reveal ? "Hide answer" : "Reveal answer"}</button>
-        <button id="open-review-result" class="secondary-button" type="button">Open in Result</button>
-      </div>
-      ${state.review.reveal ? `<div class="soft-box"><div class="section-title">Answer</div><div class="translation">${escapeHtml(item.translatedText)}</div><div class="muted" style="margin-top: 8px;">${escapeHtml(item.explanation || item.pronunciation || "No extra context")}</div></div>` : ""}
-    </div>
-  `;
+
+  // 3. Build the Review Stack safely
+  const stack = document.createElement('div');
+  stack.className = 'review-stack';
+
+  // --- Meta Chips ---
+  const metaLine = document.createElement('div');
+  metaLine.className = 'meta-line';
+  [formatLabel(item.sourceLanguage), formatLabel(item.itemType), formatLabel(item.progressStage)]
+    .forEach(text => {
+      const span = document.createElement('span');
+      span.className = 'meta-chip';
+      span.textContent = text;
+      metaLine.appendChild(span);
+    });
+  stack.appendChild(metaLine);
+
+  // --- Prompt Section ---
+  const promptDiv = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'section-title';
+  title.textContent = 'Prompt';
+  promptDiv.appendChild(title);
+
+  // Handle Pinyin
+  if (item.pinyin) {
+    const pinyinEl = document.createElement('div');
+    pinyinEl.className = 'pinyin-text';
+    pinyinEl.style.fontSize = "12px";
+    pinyinEl.textContent = item.pinyin;
+    promptDiv.appendChild(pinyinEl);
+  }
+
+  const h3 = document.createElement('h3');
+  h3.style.marginTop = '2px';
+  h3.textContent = item.originalText;
+  promptDiv.appendChild(h3);
+  stack.appendChild(promptDiv);
+
+  // --- Multiple Choice Buttons ---
+  if (item.options && item.options.length) {
+    const choiceList = document.createElement('div');
+    choiceList.className = 'choice-list';
+
+    item.options.forEach(option => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-button';
+      btn.type = 'button';
+      btn.dataset.reviewOption = option;
+      btn.textContent = option;
+
+      // Add "Correct/Incorrect" styling if the answer is revealed
+      if (state.review.reveal) {
+        const isSelected = state.review.selectedOption === option;
+        const isCorrect = option === item.translatedText;
+        if (isCorrect) btn.classList.add('correct');
+        else if (isSelected) btn.classList.add('incorrect');
+      }
+      choiceList.appendChild(btn);
+    });
+    stack.appendChild(choiceList);
+  }
+
+  // --- Action Row (Reveal & Open) ---
+  const actionRow = document.createElement('div');
+  actionRow.className = 'action-row';
+
+  const revealBtn = document.createElement('button');
+  revealBtn.id = 'reveal-review';
+  revealBtn.className = 'secondary-button';
+  revealBtn.textContent = state.review.reveal ? "Hide answer" : "Reveal answer";
+
+  const openBtn = document.createElement('button');
+  openBtn.id = 'open-review-result';
+  openBtn.className = 'secondary-button';
+  openBtn.textContent = "Open in Result";
+
+  actionRow.append(revealBtn, openBtn);
+  stack.appendChild(actionRow);
+
+  // --- Answer Section (The "Soft Box") ---
+  if (state.review.reveal) {
+    const softBox = document.createElement('div');
+    softBox.className = 'soft-box';
+
+    const ansTitle = document.createElement('div');
+    ansTitle.className = 'section-title';
+    ansTitle.textContent = 'Answer';
+
+    const trans = document.createElement('div');
+    trans.className = 'translation';
+    trans.textContent = item.translatedText;
+
+    const context = document.createElement('div');
+    context.className = 'muted';
+    context.style.marginTop = '8px';
+    context.textContent = item.explanation || item.pronunciation || "No extra context";
+
+    softBox.append(ansTitle, trans, context);
+    stack.appendChild(softBox);
+  }
+
+  // 4. Final Injection
+  elements.reviewCard.textContent = ''; // Final clear
+  elements.reviewCard.appendChild(stack);
 }
 
 function buildMapNodeMarkup(node, selectedId) {
@@ -669,45 +686,93 @@ function renderMap() {
     .join("");
 
   const nodes = map.nodes.map((node) => buildMapNodeMarkup(node, selectedId)).join("");
+  // SVG content is built from safe escapeHtml values — innerHTML is correct here
   elements.mapSvg.innerHTML = `${clusters}${edges}${nodes}`;
 
+  // --- Replace the Map Detail rendering with this ---
+  elements.mapDetail.textContent = ''; // Clear safely
+
   if (!selectedItem) {
-    elements.mapDetail.innerHTML = `<div class="soft-box"><h3>No node selected</h3><p class="empty-copy">Pick a star to inspect it.</p></div>`;
+    elements.mapDetail.appendChild(createEmptyState("No node selected", "Pick a star to inspect it."));
     return;
   }
 
-  elements.mapDetail.innerHTML = `
-    <div class="meta-line">
-      <span class="meta-chip">${escapeHtml(formatLabel(selectedItem.sourceLanguage))}</span>
-      <span class="meta-chip">${escapeHtml(formatLabel(selectedItem.itemType))}</span>
-      <span class="meta-chip stage-${escapeHtml(selectedItem.progressStage)}">${escapeHtml(formatLabel(selectedItem.progressStage))}</span>
-      ${selectedItem.tag ? `<span class="meta-chip">${escapeHtml(selectedItem.tag)}</span>` : ""}
-    </div>
-    <div>
-      <div class="section-title" style="margin-bottom: 4px;">Original text</div>
-      ${getPinyinHtml(selectedItem, "12px")}
-      <h3 style="margin-top: 2px;">${escapeHtml(selectedItem.originalText)}</h3>
-    </div>
-    <div>
-      <div class="section-title">Translation</div>
-      <div class="translation">${escapeHtml(selectedItem.translatedText || "No translation")}</div>
-    </div>
-    <div>
-      <div class="section-title">Explanation</div>
-      <div>${escapeHtml(selectedItem.explanation || "No explanation")}</div>
-    </div>
-    <div>
-      <div class="section-title">Pronunciation</div>
-      <div>${escapeHtml(selectedItem.pronunciation || "No pronunciation")}</div>
-    </div>
-    ${selectedItem.note ? `<div><div class="section-title">Note</div><div>${escapeHtml(selectedItem.note)}</div></div>` : ""}
-    <div class="muted">${escapeHtml(selectedItem.pageTitle || selectedItem.pageDomain || "No source details")}</div>
-    <div class="map-actions">
-      <button class="secondary-button" data-map-action="open" data-id="${selectedItem.id}" type="button">Open in Result</button>
-      <button class="secondary-button" data-map-action="review" data-id="${selectedItem.id}" type="button">Review this</button>
-      <button class="secondary-button" data-map-action="delete" data-id="${selectedItem.id}" type="button">Delete</button>
-    </div>
-  `;
+  const detailContainer = document.createElement('div');
+  detailContainer.className = 'map-detail-content';
+
+  // Meta Chips
+  const metaLine = document.createElement('div');
+  metaLine.className = 'meta-line';
+  [formatLabel(selectedItem.sourceLanguage), formatLabel(selectedItem.itemType), formatLabel(selectedItem.progressStage), selectedItem.tag]
+    .filter(Boolean).forEach(text => {
+      const span = document.createElement('span');
+      span.className = 'meta-chip';
+      if (text === formatLabel(selectedItem.progressStage)) span.classList.add(`stage-${selectedItem.progressStage}`);
+      span.textContent = text;
+      metaLine.appendChild(span);
+    });
+  detailContainer.appendChild(metaLine);
+
+  // Text Section
+  const textDiv = document.createElement('div');
+  const textTitle = document.createElement('div');
+  textTitle.className = 'section-title';
+  textTitle.style.marginBottom = '4px';
+  textTitle.textContent = 'Original text';
+  textDiv.appendChild(textTitle);
+
+  // Pinyin — only show if Chinese
+  if (selectedItem.pinyin) {
+    const pinyinEl = document.createElement('div');
+    pinyinEl.className = 'pinyin-text';
+    pinyinEl.style.fontSize = '12px';
+    pinyinEl.textContent = selectedItem.pinyin;
+    textDiv.appendChild(pinyinEl);
+  }
+
+  const h3 = document.createElement('h3');
+  h3.style.marginTop = '2px';
+  h3.textContent = selectedItem.originalText;
+  textDiv.appendChild(h3);
+  detailContainer.appendChild(textDiv);
+
+  // Sections (Translation, Explanation, Pronunciation)
+  const addMapSection = (title, content, className = "") => {
+    const div = document.createElement('div');
+    const t = document.createElement('div');
+    t.className = 'section-title';
+    t.textContent = title;
+    const c = document.createElement('div');
+    if (className) c.className = className;
+    c.textContent = content;
+    div.append(t, c);
+    detailContainer.appendChild(div);
+  };
+
+  addMapSection("Translation", selectedItem.translatedText || "No translation", "translation");
+  addMapSection("Explanation", selectedItem.explanation || "No explanation");
+  addMapSection("Pronunciation", selectedItem.pronunciation || "No pronunciation");
+  if (selectedItem.note) addMapSection("Note", selectedItem.note);
+
+  const muted = document.createElement('div');
+  muted.className = 'muted';
+  muted.textContent = selectedItem.pageTitle || selectedItem.pageDomain || "No source details";
+  detailContainer.appendChild(muted);
+
+  // Map Action Buttons
+  const actions = document.createElement('div');
+  actions.className = 'map-actions';
+  [['Open in Result', 'open'], ['Review this', 'review'], ['Delete', 'delete']].forEach(([lab, act]) => {
+    const btn = document.createElement('button');
+    btn.className = 'secondary-button';
+    btn.dataset.mapAction = act;
+    btn.dataset.id = selectedItem.id;
+    btn.textContent = lab;
+    actions.appendChild(btn);
+  });
+  detailContainer.appendChild(actions);
+
+  elements.mapDetail.appendChild(detailContainer);
 }
 
 async function refreshMemory() {
@@ -776,31 +841,35 @@ async function initializePanel() {
     getNativeLanguage(),
   ]);
 
-  // Update the translation section label to reflect the user's chosen language
   if (elements.translationLabel) {
     elements.translationLabel.textContent = `${nativeLanguage} Translation`;
   }
 
   state.savedItems = savedItems;
   state.historyItems = historyItems;
+
+  // Render lists in the background
   renderSavedList();
   renderHistoryList();
   renderReviewState();
   renderMap();
 
+  // --- CRITICAL CHANGE START ---
+  // If there is a NEW word waiting (from right-click), ignore the old result
+  if (pending && pending.text) {
+    await clearPendingSelection();
+    await runUnderstanding(pending);
+    return; // Exit early so we don't render the old result
+  }
+
+  // If NO new word, then show the last thing the user looked up
   if (currentResult) {
     state.currentLookup = toResultViewModel(currentResult);
     renderResult(state.currentLookup);
   } else {
     renderIdle();
   }
-
-  if (!pending?.text) {
-    return;
-  }
-
-  await clearPendingSelection();
-  await runUnderstanding(pending);
+  // --- CRITICAL CHANGE END ---
 }
 
 async function handleSaveCurrent() {
@@ -1087,6 +1156,102 @@ function registerEvents() {
       await refreshMemory();
     });
   }
+}
+
+// --- Add these at the bottom of sidepanel.js ---
+
+function createItemCard(item, isSavedType) {
+  const article = document.createElement('article');
+  article.className = 'list-card';
+
+  // 1. Chips
+  const metaLine = document.createElement('div');
+  metaLine.className = 'meta-line';
+  const chipTexts = isSavedType
+    ? [formatLabel(item.sourceLanguage), formatLabel(item.itemType), formatLabel(item.progressStage), formatRelativeDate(item.savedAt)]
+    : [formatLabel(item.sourceLanguage), formatLabel(item.itemType), formatRelativeDate(item.lookedUpAt)];
+
+  chipTexts.filter(Boolean).forEach(text => {
+    const span = document.createElement('span');
+    span.className = 'meta-chip';
+    span.textContent = text;
+    metaLine.appendChild(span);
+  });
+  article.appendChild(metaLine);
+
+  // 2. Pinyin & Word (The part showing as code in your screenshot)
+  const contentDiv = document.createElement('div');
+  contentDiv.style.cssText = "display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px 0;";
+
+  // FIX: Don't use a string for Pinyin. Build the element.
+  if (item.pinyin) {
+    const pinyinEl = document.createElement('div');
+    pinyinEl.className = 'pinyin-text';
+    pinyinEl.style.cssText = "margin-top: 0; font-size: 11px; font-weight: 600; color: var(--accent);";
+    pinyinEl.textContent = item.pinyin;
+    contentDiv.appendChild(pinyinEl);
+  }
+
+  const wordEl = document.createElement('strong');
+  wordEl.style.fontSize = "16px";
+  wordEl.textContent = item.originalText;
+  contentDiv.appendChild(wordEl);
+  article.appendChild(contentDiv);
+
+  // 3. Translation
+  const p = document.createElement('p');
+  p.textContent = item.translatedText || item.explanation || "";
+  article.appendChild(p);
+
+  // 4. Source
+  const muted = document.createElement('div');
+  muted.className = 'muted';
+  muted.textContent = item.pageTitle || item.pageDomain || "Gemini";
+  article.appendChild(muted);
+
+  // 5. Icons (The other part showing as code)
+  const actionRow = document.createElement('div');
+  actionRow.className = 'action-icon-row';
+
+  const icons = isSavedType
+    ? [{ id: 'review', act: 'review-saved' }, { id: 'open', act: 'open-saved' }, { id: 'trash', act: 'delete-saved', danger: true }]
+    : [{ id: 'saved', act: 'save-history' }, { id: 'open', act: 'open-history' }, { id: 'trash', act: 'delete-history', danger: true }];
+
+  icons.forEach(icon => {
+    const btn = document.createElement('button');
+    btn.className = `action-icon-btn${icon.danger ? ' danger' : ''}`;
+    btn.type = 'button';
+    btn.dataset.action = icon.act;
+    btn.dataset.id = item.id;
+    // Icons are static hardcoded strings with no user data — innerHTML is safe here
+    btn.innerHTML = `<svg width="16" height="16" style="pointer-events: none;"><use href="#icon-${icon.id}"/></svg>`;
+    actionRow.appendChild(btn);
+  });
+  article.appendChild(actionRow);
+
+  return article;
+}
+
+function createEmptyState(title, sub) {
+  const container = document.createElement('div');
+  container.style.cssText = "display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 24px;";
+
+  const illustration = document.createElement('div');
+  illustration.className = 'empty-illustration';
+  illustration.setAttribute('aria-hidden', 'true');
+  illustration.style.margin = "0 auto 12px auto";
+
+  const h1 = document.createElement('h1');
+  h1.style.cssText = "font-size: 18px; color: var(--text-soft); margin-bottom: 6px;";
+  h1.textContent = title;
+
+  const p = document.createElement('p');
+  p.className = 'muted';
+  p.style.cssText = "font-size: 13px; max-width: 250px; margin: 0 auto;";
+  p.textContent = sub;
+
+  container.append(illustration, h1, p);
+  return container;
 }
 
 registerEvents();
