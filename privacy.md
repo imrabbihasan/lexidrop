@@ -105,9 +105,9 @@ If a future update changes how data is handled, the **"Last updated"** date at t
 If you have any questions about this privacy policy or how LexiDrop handles data, please contact:
 
 **Hasan Rabbi**  
-📧 rabbihasan.dev@outlook.com  
-🔗 GitHub: https://github.com/rabbihasan
+📧 rabbihasan.dev@outlook.com   
+🔗 GitHub: https://github.com/imrabbihasan
 
 ---
 
-*LexiDrop is open-source. You are welcome to inspect every line of code to verify these claims.*
+*LexiDrop is open-source. You are welcome to inspect every line of code to verify these claims.
